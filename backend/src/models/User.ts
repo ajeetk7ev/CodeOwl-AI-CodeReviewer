@@ -4,6 +4,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   githubId: string;
+  githubToken?: string;
   avatar?: string;
   plan: "free" | "pro";
   usage: {
@@ -32,6 +33,9 @@ const userSchema = new Schema<IUser>(
       totalRepos: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },
     },
+
+    githubToken: { type: String },
+
 
     lastLogin: { type: Date },
   },

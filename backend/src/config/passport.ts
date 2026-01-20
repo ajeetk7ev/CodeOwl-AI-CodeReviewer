@@ -19,12 +19,13 @@ passport.use(
         let user = await User.findOne({ githubId: profile.id });
 
         if (!user) {
-          user = await User.create({
-            githubId: profile.id,
-            name: profile.displayName || profile.username,
-            email: profile.emails?.[0]?.value,
-            avatar: profile.photos?.[0]?.value,
-          });
+         user = await User.create({
+  githubId: profile.id,
+  name: profile.displayName || profile.username,
+  email: profile.emails?.[0]?.value,
+  avatar: profile.photos?.[0]?.value,
+  githubToken: accessToken,
+});
         } else {
           user.lastLogin = new Date();
           await user.save();
