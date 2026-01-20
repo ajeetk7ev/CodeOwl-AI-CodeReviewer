@@ -4,21 +4,29 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js"
   },
-  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "mongoose": "^9.1.4"
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.4",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/passport": "^1.0.17",
+    "@types/passport-github2": "^1.2.9",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2"
   }
