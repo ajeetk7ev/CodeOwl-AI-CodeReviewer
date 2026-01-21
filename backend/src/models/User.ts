@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
-  name: string;
-  email: string;
-  githubId: string;
+  name?: string;
+  email?: string;
+  githubId?: string;
+  githubUsername?: string;
   githubToken?: string;
   avatar?: string;
   plan: "free" | "pro";
@@ -18,9 +19,10 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    githubId: { type: String, required: true, unique: true },
+    name: { type: String },
+    email: { type: String, unique: true, required: false },
+    githubId: { type: String, unique: true },
+    githubUsername: { type: String },
     avatar: { type: String },
 
     plan: {
@@ -36,10 +38,9 @@ const userSchema = new Schema<IUser>(
 
     githubToken: { type: String },
 
-
     lastLogin: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model<IUser>("User", userSchema);

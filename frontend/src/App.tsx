@@ -1,11 +1,19 @@
-import { Button } from "@/components/ui/button"
+import { Toaster } from "sonner";
+import { useEffect } from "react";
+import AppRoutes from "./routes/AppRoutes";
+import { useAuthStore } from "@/store/authStore";
 
-function App() {
+export default function App() {
+  const { fetchUser } = useAuthStore();
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      <Button>Click me</Button>
-    </div>
-  )
+    <>
+      <AppRoutes />
+      <Toaster position="top-right" theme="dark" />
+    </>
+  );
 }
-
-export default App

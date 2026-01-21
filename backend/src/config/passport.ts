@@ -13,20 +13,28 @@ passport.use(
       accessToken: string,
       refreshToken: string,
       profile: any,
-      done: Function
+      done: Function,
     ) {
       try {
         let user = await User.findOne({ githubId: profile.id });
 
         if (!user) {
-         user = await User.create({
-  githubId: profile.id,
-  name: profile.displayName || profile.username,
-  email: profile.emails?.[0]?.value,
-  avatar: profile.photos?.[0]?.value,
-  githubToken: accessToken,
-});
+          user = await User.create({
+            githubId: profile.id,
+            githubUsername: profile.username,
+            name: profile.displayName || profile.username,
+            email:
+              profile.emails?.[0]?.value || `${profile.id}@no-email.github.com`,
+            avatar: profile.photos?.[0]?.value,
+            githubToken: accessToken,
+          });
         } else {
+          if (!user.email) {
+            user.email =
+              profile.emails?.[0]?.value || `${profile.id}@no-email.github.com`;
+          }
+          user.githubUsername = profile.username;
+          user.githubToken = accessToken; // Update token just in case
           user.lastLogin = new Date();
           await user.save();
         }
@@ -35,8 +43,8 @@ passport.use(
       } catch (error) {
         return done(error, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 export default passport;
