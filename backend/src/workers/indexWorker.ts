@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { redisConnection } from "../config/redis";
+import { createRedisConnection } from "../config/redis";
 import Repository from "../models/Repository";
 import User from "../models/User";
 import { getRepoFiles } from "../services/githubRepoService";
@@ -88,7 +88,19 @@ export const indexWorker = new Worker(
     return { message: "Indexing completed" };
   },
   {
-    connection: redisConnection as any,
+    connection: createRedisConnection() as any,
     concurrency: 2,
   },
 );
+
+indexWorker.on("ready", () => {
+  console.log("[Worker] Index Worker is ready and listening for jobs");
+});
+
+indexWorker.on("completed", (job) => {
+  console.log(`[Worker] Indexing Job ${job.id} completed`);
+});
+
+indexWorker.on("failed", (job, err) => {
+  console.error(`[Worker] Indexing Job ${job?.id} failed:`, err.message);
+});

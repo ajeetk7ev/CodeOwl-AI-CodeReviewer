@@ -1,8 +1,101 @@
-import { Check, Zap, Sparkles, ShieldCheck } from "lucide-react";
+import { Check, Zap, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/store/authStore";
+import api from "@/services/api";
+import { useState } from "react";
 
 export default function Subscription() {
+  const { user, fetchUser } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+
+  const handlePayment = async (plan: string, amount: number) => {
+    if (!user) {
+        alert("Please login to subscribe.");
+        return;
+    }
+
+    setLoading(true);
+    try {
+      // 0. Check if Razorpay SDK is loaded
+      if (!(window as any).Razorpay) {
+         alert("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+         setLoading(false);
+         return;
+      }
+
+      // 1. Create Order on Backend
+      const { data } = await api.post("/subscription/create-order", { amount });
+
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      if (!razorpayKey) {
+        console.error("VITE_RAZORPAY_KEY_ID is missing from environment variables");
+        alert("Configuration error: Razorpay Key ID is missing.");
+        setLoading(false);
+        return;
+      }
+
+      const options = {
+        key: razorpayKey,
+        amount: data.amount,
+        currency: data.currency,
+        name: "CodeOwl AI",
+        description: `${plan} Plan Subscription (UPI & Netbanking Supported)`,
+        order_id: data.orderId,
+        handler: async (response: any) => {
+          console.log("[Razorpay] Payment successful, verifying...");
+          try {
+            // 2. Verify Payment on Backend
+            const verifyRes = await api.post("/subscription/verify-payment", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: plan.toLowerCase()
+            });
+
+            if (verifyRes.data.success) {
+              alert("Congratulations! Your plan has been upgraded to Pro.");
+              await fetchUser(); // Refresh user state
+            }
+          } catch (error: any) {
+            console.error("Verification failed", error);
+            alert("Payment verification failed: " + (error.response?.data?.message || error.message));
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: user.name || user.githubUsername,
+          email: user.email || "",
+          contact: "", // Optional: add contact field if needed
+        },
+        theme: {
+          color: "#FBBF24", // Gold theme color
+        },
+      };
+
+      console.log(`[Razorpay] Opening checkout for ${data.amount} ${data.currency}`);
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+          alert(`Payment Failed: ${response.error.description}`);
+          setLoading(false);
+      });
+      rzp.open();
+    } catch (error: any) {
+      console.error("Order creation failed", error);
+      alert("Failed to initiate payment: " + (error.response?.data?.message || error.message));
+    } finally {
+      // We don't set loading to false here because rzp.open is async and the modal might be open.
+      // We set it to false in handle, ondismiss, and catch blocks.
+    }
+  };
+
+  const isPro = user?.plan === "pro";
+
   return (
     <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="text-center space-y-4 pt-10">
@@ -36,7 +129,7 @@ export default function Subscription() {
                       <div className="mr-3 p-1 rounded-full bg-emerald-500/10 text-emerald-500">
                         <Check className="h-4 w-4" />
                       </div>
-                      3 Connected Repositories
+                      5 Connected Repositories
                   </li>
                   <li className="flex items-center text-muted-foreground group-hover:text-white transition-colors">
                       <div className="mr-3 p-1 rounded-full bg-emerald-500/10 text-emerald-500">
@@ -59,8 +152,12 @@ export default function Subscription() {
                </ul>
             </CardContent>
             <CardFooter className="pt-8">
-               <Button className="w-full h-12 rounded-2xl border-[#262626] text-muted-foreground hover:bg-[#111] hover:text-white transition-all font-bold" variant="outline">
-                    Current Plan
+               <Button
+                className="w-full h-12 rounded-2xl border-[#262626] text-muted-foreground hover:bg-[#111] hover:text-white transition-all font-bold"
+                variant="outline"
+                disabled={!isPro}
+               >
+                    {!isPro ? "Current Plan" : "Downgrade (Contact Support)"}
                </Button>
             </CardFooter>
         </Card>
@@ -88,7 +185,7 @@ export default function Subscription() {
                 </div>
                 <CardDescription className="text-muted-foreground text-sm font-medium">For professional developers and scaling teams.</CardDescription>
                 <div className="mt-6 flex items-baseline gap-1">
-                   <span className="text-5xl font-bold text-white">$19</span>
+                   <span className="text-5xl font-bold text-white">$29</span>
                    <span className="text-muted-foreground font-medium">/mo</span>
                 </div>
             </CardHeader>
@@ -127,8 +224,18 @@ export default function Subscription() {
                </ul>
             </CardContent>
             <CardFooter className="pt-8">
-               <Button className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all">
-                   Get Started with Pro
+               <Button 
+                className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] transition-all"
+                disabled={isPro || loading}
+                onClick={() => handlePayment("Pro", 29)}
+               >
+                {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                ) : isPro ? (
+                    "Current Plan"
+                ) : (
+                    "Get Started with Pro"
+                )}
                </Button>
             </CardFooter>
         </Card>
@@ -137,7 +244,7 @@ export default function Subscription() {
       <div className="text-center">
           <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Secure payments powered by Stripe
+              Secure payments powered by Razorpay
           </p>
       </div>
     </div>

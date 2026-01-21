@@ -8,7 +8,7 @@ export const createEmbedding = async (text: string): Promise<number[]> => {
     {
       inputType: "passage",
       truncate: "END",
-      parameters: { dimension: 2048 },
+      dimension: 2048,
     } as any,
   );
 

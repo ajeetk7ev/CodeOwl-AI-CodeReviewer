@@ -10,9 +10,12 @@ import webhookRoutes from "./routes/webhookRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
 import settingsRoutes from "./routes/settingsRoutes";
+import subscriptionRoutes from "./routes/subscriptionRoutes";
 
+console.log("[Server] Importing workers...");
 import "./workers/indexWorker";
 import "./workers/reviewWorker";
+console.log("[Server] Workers imported");
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,7 +30,15 @@ app.use(
   }),
 );
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req: any, _res, buf) => {
+      if (req.originalUrl === "/api/webhooks/github") {
+        req.rawBody = buf;
+      }
+    },
+  }),
+);
 app.use(cookieParser());
 app.use(passport.initialize());
 
@@ -37,6 +48,7 @@ app.use("/api/webhooks", webhookRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/apisettings", settingsRoutes);
+app.use("/api/subscription", subscriptionRoutes);
 
 app.use("/health", (_, res) => {
   res.json({

@@ -11,7 +11,9 @@ import {
   RefreshCw,
   ExternalLink,
   Lock,
-  Globe
+  Globe,
+  Sparkles,
+  ShieldCheck
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,8 +24,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/services/api";
 import  type { Repository, GithubRepository } from "@/types/api";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { Link } from "react-router-dom";
 
 export default function Repositories() {
+  const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as "connected" | "all") || "connected";
   const [activeTab, setActiveTab] = useState<"connected" | "all">(initialTab);
@@ -141,9 +146,13 @@ export default function Repositories() {
       const res = await api.post<Repository>("/repositories/connect", payload);
       setConnectedRepos([...connectedRepos, res.data]);
       handleTabChange("connected");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to connect repo", error);
-      alert("Failed to connect repository. It might already be connected.");
+      if (error.response?.status === 403) {
+        alert(error.response.data.message);
+      } else {
+        alert("Failed to connect repository. It might already be connected.");
+      }
     } finally {
       setProcessingId(null);
     }
@@ -219,6 +228,51 @@ export default function Repositories() {
             </div>
         </div>
       </div>
+
+      {user?.plan === "free" && (
+        <div className="bg-[#141414] border border-primary/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-primary/5">
+            <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-white">Free Tier Usage</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        You've connected <span className="text-primary font-bold">{connectedRepos.length}</span> out of <span className="text-white font-bold">5</span> available repositories.
+                    </p>
+                </div>
+            </div>
+            
+            <div className="w-full md:w-64 h-3 bg-[#0C0C0C] rounded-full overflow-hidden border border-[#262626]">
+                <div 
+                    className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)] transition-all duration-1000" 
+                    style={{ width: `${Math.min((connectedRepos.length / 5) * 100, 100)}%` }}
+                />
+            </div>
+            
+            <Button asChild className="w-full md:w-auto rounded-xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-black font-bold">
+                <Link to="/subscription">Upgrade for Unlimited</Link>
+            </Button>
+        </div>
+      )}
+
+      {user?.plan === "pro" && (
+        <div className="bg-[#141414] border border-emerald-500/20 rounded-2xl p-6 flex items-center justify-between shadow-2xl shadow-emerald-500/5">
+             <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                    <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-white">Pro Plan Active</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">Enjoy unlimited repository connections and prioritized reviews.</p>
+                </div>
+            </div>
+            <div className="hidden md:flex items-center gap-2 text-emerald-500 font-bold text-sm bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Ultimate Precision Enabled
+            </div>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center w-full max-w-md relative group">
@@ -400,7 +454,7 @@ export default function Repositories() {
                                 <Button 
                                     className="w-full sm:w-auto h-11 rounded-xl px-8 shadow-lg shadow-primary/5 hover:scale-[1.02] transition-transform active:scale-[0.98]" 
                                     onClick={() => handleConnect(repo)}
-                                    disabled={processingId === repo.id}
+                                    disabled={processingId === repo.id || (user?.plan === "free" && connectedRepos.length >= 5)}
                                 >
                                     {processingId === repo.id ? (
                                         <>

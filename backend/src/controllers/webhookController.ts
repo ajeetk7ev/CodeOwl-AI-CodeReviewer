@@ -3,12 +3,16 @@ import Repository from "../models/Repository";
 import PullRequest from "../models/PullRequest";
 import { reviewQueue } from "../queue/reviewQueue";
 import { githubWebhookSchema } from "../utils/validation";
+import User from "../models/User";
+import Review from "../models/Review";
 
 export const handleGithubWebhook = async (req: Request, res: Response) => {
   try {
+    console.log("Handle Github Webhook called");
     const event = req.headers["x-github-event"];
 
     if (event !== "pull_request") {
+      console.log(`[Webhook] Ignored event: ${event}`);
       return res.json({ message: "Ignored" });
     }
 
@@ -43,6 +47,25 @@ export const handleGithubWebhook = async (req: Request, res: Response) => {
       return res.json({ message: "Repo not connected" });
     }
 
+    const user = await User.findById(repo.userId);
+    if (!user) {
+      console.error(`[Webhook] User not found for repo: ${repoFullName}`);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // AI Review Restriction for Free Tier
+    if (user.plan === "free") {
+      const reviewCount = await Review.countDocuments({ userId: user._id });
+      if (reviewCount >= 50) {
+        console.warn(
+          `[Webhook] Free tier review limit reached for user: ${user.githubUsername}`,
+        );
+        return res.json({
+          message: "Review limit reached. Please upgrade to Pro.",
+        });
+      }
+    }
+
     // Create PR record
     const pr = await PullRequest.create({
       repositoryId: repo._id,
@@ -57,11 +80,18 @@ export const handleGithubWebhook = async (req: Request, res: Response) => {
     console.log(`[Webhook] PR ${pr.prNumber} created, adding to review queue`);
 
     // Add job to queue
-    await reviewQueue.add("generate-review", {
+    await reviewQueue.add("pr-review", {
       repoId: repo._id,
       prId: pr._id,
       prNumber: pr.prNumber,
     });
+
+    // Update user usage stats
+    await User.findByIdAndUpdate(user._id, {
+      $inc: { "usage.totalReviews": 1 },
+    });
+
+    console.log("Handle Github Webhook END");
 
     res.json({ message: "PR queued for review" });
   } catch (error: any) {

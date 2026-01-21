@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 
 export const verifyGithubSignature = (
-  req: Request,
+  req: Request & { rawBody?: Buffer },
   res: Response,
   next: NextFunction,
 ) => {
@@ -15,21 +15,25 @@ export const verifyGithubSignature = (
   }
 
   if (!signature) {
+    console.warn("[Webhook] No signature provided");
     return res.status(401).json({ message: "No signature provided" });
   }
 
+  if (!req.rawBody) {
+    console.error("[Webhook] Raw body not captured");
+    return res.status(500).json({ message: "Internal server error" });
+  }
+
   const hmac = crypto.createHmac("sha256", secret);
-  const body = JSON.stringify(req.body);
-  const digest = Buffer.from(
-    "sha256=" + hmac.update(body).digest("hex"),
-    "utf8",
-  );
+  hmac.update(req.rawBody);
+  const digest = Buffer.from("sha256=" + hmac.digest("hex"), "utf8");
   const checksum = Buffer.from(signature, "utf8");
 
   if (
     checksum.length !== digest.length ||
     !crypto.timingSafeEqual(digest, checksum)
   ) {
+    console.warn("[Webhook] Invalid signature");
     return res.status(401).json({ message: "Invalid signature" });
   }
 

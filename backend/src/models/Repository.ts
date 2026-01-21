@@ -9,6 +9,7 @@ export interface IRepository extends Document {
   private: boolean;
   isConnected: boolean;
   defaultBranch: string;
+  githubWebhookId?: string;
   indexed: boolean;
   lastIndexedAt?: Date;
   createdAt: Date;
@@ -32,14 +33,11 @@ const repositorySchema = new Schema<IRepository>(
     isConnected: { type: Boolean, default: false },
 
     defaultBranch: { type: String },
-
+    githubWebhookId: { type: String },
     indexed: { type: Boolean, default: false },
     lastIndexedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model<IRepository>(
-  "Repository",
-  repositorySchema
-);
+export default mongoose.model<IRepository>("Repository", repositorySchema);
