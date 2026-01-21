@@ -1,11 +1,34 @@
-import OpenAI from "openai";
+import { OpenRouter } from "@openrouter/sdk";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
+const client = new OpenRouter({
+  apiKey: process.env.OPENROUTER_KEY!,
 });
 
-export const generateAIReview = async (prDiff: string, context: string) => {
+function normalizeContent(
+  content:
+    | string
+    | {
+        type: string;
+        text?: string;
+      }[],
+): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  // Extract text from multimodal blocks
+  return content
+    .map((item) => {
+      if (item.type === "text") return item.text ?? "";
+      return "";
+    })
+    .join("");
+}
+
+export const generateAIReview = async (
+  prDiff: string,
+  context: string,
+): Promise<string> => {
   const prompt = `
 You are a **senior software engineer and code reviewer** with strong expertise in:
 - Clean architecture
@@ -33,43 +56,28 @@ ${prDiff}
 ---
 
 ## 📝 Instructions (STRICT)
-- Be **precise, constructive, and professional**
+- Be precise, constructive, and professional
 - Do NOT repeat the diff verbatim
 - If no major issues exist, explicitly say so
-- Mark issues with severity: **[Critical] [Major] [Minor]**
-- Prefer **actionable suggestions** over vague advice
-- If assumptions are made, clearly state them
+- Mark issues with severity: [Critical] [Major] [Minor]
+- Prefer actionable suggestions
+- Clearly state assumptions if any
 
 ---
 
 ## 📑 Output Format (MANDATORY)
 
-Respond ONLY in the following markdown structure:
-
 ### 🧠 Summary
-A concise explanation of what this PR does and its overall quality.
-
 ### ⚠️ Issues
-List detected issues (if any) with severity tags.
-If no issues are found, say: *"No critical issues detected."*
-
 ### 💡 Suggestions
-Concrete suggestions to improve clarity, structure, or safety.
-
 ### 🚀 Improvements
-Optional enhancements for performance, scalability, or DX.
-
 ### ✅ Best Practices
-Best practices reinforced or recommended based on the changes.
-
 ### 🎵 Code Review Poem
-End with a **short, developer-friendly poem (4 lines max)** that humorously or thoughtfully reflects the review.
-Keep it technical, light, and positive.
+(4 lines max, technical, light, positive)
 `;
 
-  const response = await client.chat.completions.create({
-    model: "google/gemini-2.0-flash-exp:free",
-    temperature: 0.3,
+  const response = await client.chat.send({
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       {
         role: "user",
@@ -78,5 +86,9 @@ Keep it technical, light, and positive.
     ],
   });
 
-  return response.choices[0].message.content;
+  const rawContent = response.choices?.[0]?.message?.content;
+
+  if (!rawContent) return "";
+
+  return normalizeContent(rawContent);
 };

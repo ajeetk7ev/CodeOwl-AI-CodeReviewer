@@ -4,6 +4,7 @@ import PullRequest from "../models/PullRequest";
 import Review from "../models/Review";
 import User from "../models/User";
 import { Octokit } from "@octokit/rest";
+import mongoose from "mongoose";
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
@@ -40,11 +41,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       totalCommits = data.total_count;
     }
 
+    const recentReviews = await Review.find({ userId })
+      .populate("repositoryId", "name fullName")
+      .populate("pullRequestId", "prNumber title")
+      .sort({ createdAt: -1 })
+      .limit(5);
+
     res.json({
       totalRepos,
       totalPRs,
       totalReviews,
       totalCommits,
+      recentReviews,
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to load stats" });
@@ -53,7 +61,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
 export const getActivityHeatmap = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = new mongoose.Types.ObjectId((req as any).user.id);
     const user = await User.findById(userId);
     const requestedYear =
       parseInt(req.query.year as string) || new Date().getFullYear();
@@ -93,6 +101,20 @@ export const getActivityHeatmap = async (req: Request, res: Response) => {
       {
         $match: {
           "repo.userId": userId,
+          // If we want to be strict about "my contributions", we should match author.
+          // However, for now, let's keep it as is based on the user request,
+          // BUT ensure we are also creating a clearer count.
+          // The previous issue was likely just the type casting which is fixed.
+          // If the user says "showing 10", it implies some data is coming through now.
+          // Let's ensure we are counting ALL PRs in their repos if that is the intended logic,
+          // OR filter by author if they only want THEIR PRs.
+          // Given "my contribution", it implies authorship.
+          // But PullRequest schema doesn't link to User model directly, only string author.
+          // We need user's githubUsername.
+          $or: [
+            { author: user?.githubUsername }, // PRs created by user
+            { "repo.userId": userId }, // OR PRs in user's repos (maintainer)
+          ],
           createdAt: { $gte: startDate, $lte: endDate },
         },
       },
@@ -196,7 +218,7 @@ export const getActivityHeatmap = async (req: Request, res: Response) => {
 
 export const getMonthlyOverview = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = new mongoose.Types.ObjectId((req as any).user.id);
 
     const last6Months = new Date();
     last6Months.setMonth(last6Months.getMonth() - 6);
