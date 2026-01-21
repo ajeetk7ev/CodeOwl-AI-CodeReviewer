@@ -13,8 +13,19 @@ import {
   Lock,
   Globe,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from "lucide-react";
+
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +53,7 @@ export default function Repositories() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
+  const [repoToDelete, setRepoToDelete] = useState<string | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
 
   const handleTabChange = (tab: "connected" | "all") => {
@@ -149,9 +161,9 @@ export default function Repositories() {
     } catch (error: any) {
       console.error("Failed to connect repo", error);
       if (error.response?.status === 403) {
-        alert(error.response.data.message);
+        toast.error(error.response.data.message);
       } else {
-        alert("Failed to connect repository. It might already be connected.");
+        toast.error("Failed to connect repository. It might already be connected.");
       }
     } finally {
       setProcessingId(null);
@@ -159,15 +171,24 @@ export default function Repositories() {
   };
 
 
-  const handleDisconnect = async (id: string) => {
-    if (!confirm("Are you sure you want to disconnect this repository? Reviews will be preserved but sync will stop.")) return;
+  const handleDisconnectClick = (id: string) => {
+    setRepoToDelete(id);
+  };
+
+  const confirmDisconnect = async () => {
+    if (!repoToDelete) return;
     
+    const id = repoToDelete;
     setProcessingId(id);
+    setRepoToDelete(null); 
+    
     try {
       await api.delete(`/repositories/${id}`);
       setConnectedRepos(connectedRepos.filter(r => r._id !== id));
+      toast.success("Repository disconnected successfully");
     } catch (error) {
       console.error("Failed to disconnect", error);
+      toast.error("Failed to disconnect repository");
     } finally {
       setProcessingId(null);
     }
@@ -410,7 +431,7 @@ export default function Repositories() {
                                             variant="ghost" 
                                             size="sm" 
                                             className="h-9 text-xs text-red-500/70 hover:text-red-500 hover:bg-red-500/5 rounded-lg"
-                                            onClick={() => handleDisconnect(repo._id)}
+                                            onClick={() => handleDisconnectClick(repo._id)}
                                             disabled={processingId === repo._id}
                                         >
                                             {processingId === repo._id ? (
@@ -503,6 +524,33 @@ export default function Repositories() {
             )}
         </motion.div>
       </AnimatePresence>
+
+
+      <Dialog open={!!repoToDelete} onOpenChange={(open) => !open && setRepoToDelete(null)}>
+        <DialogContent className="bg-[#0C0C0C] border-[#1F1F1F] text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+               <AlertTriangle className="h-5 w-5" />
+               Disconnect Repository
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              Are you sure you want to disconnect this repository? Reviews will be preserved but sync will stop.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setRepoToDelete(null)} className="h-9 rounded-lg hover:bg-white/5 hover:text-white">
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDisconnect}
+              className="h-9 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 font-bold shadow-none"
+            >
+              Disconnect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

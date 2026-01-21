@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {  useSearchParams } from "react-router-dom";
 import { Github, Loader2, Code2, Sparkles, ArrowRight, ShieldCheck, Zap, GitPullRequest } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +13,7 @@ export default function Login() {
   useEffect(() => {
     const error = searchParams.get("error");
     if (error) {
-       alert("Login failed. Please try again.");
+      toast.error("Login failed. Please try again.");
     }
   }, [searchParams]);
 

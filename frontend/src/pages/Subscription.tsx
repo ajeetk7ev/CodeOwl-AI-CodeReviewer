@@ -1,4 +1,5 @@
 import { Check, Zap, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/store/authStore";
@@ -11,7 +12,7 @@ export default function Subscription() {
 
   const handlePayment = async (plan: string, amount: number) => {
     if (!user) {
-        alert("Please login to subscribe.");
+        toast.error("Please login to subscribe.");
         return;
     }
 
@@ -19,7 +20,7 @@ export default function Subscription() {
     try {
       // 0. Check if Razorpay SDK is loaded
       if (!(window as any).Razorpay) {
-         alert("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
+         toast.error("Razorpay SDK failed to load. Please check your internet connection or disable adblockers.");
          setLoading(false);
          return;
       }
@@ -31,7 +32,7 @@ export default function Subscription() {
       
       if (!razorpayKey) {
         console.error("VITE_RAZORPAY_KEY_ID is missing from environment variables");
-        alert("Configuration error: Razorpay Key ID is missing.");
+        toast.error("Configuration error: Razorpay Key ID is missing.");
         setLoading(false);
         return;
       }
@@ -55,12 +56,12 @@ export default function Subscription() {
             });
 
             if (verifyRes.data.success) {
-              alert("Congratulations! Your plan has been upgraded to Pro.");
+              toast.success("Congratulations! Your plan has been upgraded to Pro.");
               await fetchUser(); // Refresh user state
             }
           } catch (error: any) {
             console.error("Verification failed", error);
-            alert("Payment verification failed: " + (error.response?.data?.message || error.message));
+            toast.error("Payment verification failed: " + (error.response?.data?.message || error.message));
           }
         },
         modal: {
@@ -81,13 +82,13 @@ export default function Subscription() {
       console.log(`[Razorpay] Opening checkout for ${data.amount} ${data.currency}`);
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
-          alert(`Payment Failed: ${response.error.description}`);
+          toast.error(`Payment Failed: ${response.error.description}`);
           setLoading(false);
       });
       rzp.open();
     } catch (error: any) {
       console.error("Order creation failed", error);
-      alert("Failed to initiate payment: " + (error.response?.data?.message || error.message));
+      toast.error("Failed to initiate payment: " + (error.response?.data?.message || error.message));
     } finally {
       // We don't set loading to false here because rzp.open is async and the modal might be open.
       // We set it to false in handle, ondismiss, and catch blocks.

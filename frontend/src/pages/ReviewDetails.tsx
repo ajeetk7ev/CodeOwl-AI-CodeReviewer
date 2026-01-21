@@ -172,9 +172,7 @@ export default function ReviewDetails() {
                             children,
                             ...props
                           }: any) => {
-                            const match = /language-(\w+)/.exec(
-                              className || "",
-                            );
+                            
                             return !inline ? (
                               <div className="relative group">
                                 <code

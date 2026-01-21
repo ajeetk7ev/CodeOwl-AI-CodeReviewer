@@ -11,6 +11,7 @@ import {
   Camera,
   Link as LinkIcon
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,10 +61,10 @@ export default function Settings() {
     setSaving(true);
     try {
       await api.put("/settings/profile", { name: profile.name, email: profile.email });
-      alert("Profile updated successfully");
+      toast.success("Profile updated successfully");
     } catch (error) {
        console.error("Failed to update profile", error);
-       alert("Failed to update profile");
+       toast.error("Failed to update profile");
     } finally {
       setSaving(false);
     }
