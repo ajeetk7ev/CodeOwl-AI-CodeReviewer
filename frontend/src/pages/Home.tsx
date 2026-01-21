@@ -220,7 +220,7 @@ export default function Home() {
                <a href="#" className="hover:text-primary transition-colors">Terms</a>
                <a href="#" className="hover:text-primary transition-colors">Contact</a>
             </div>
-            <p className="text-muted-foreground">© 2024 CodeOwl AI. All rights reserved.</p>
+            <p className="text-muted-foreground">© 2026 CodeOwl AI. All rights reserved.</p>
          </div>
       </footer>
     </div>
