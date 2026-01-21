@@ -7,9 +7,7 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  Code2,
-  Github,
-  ChevronRight
+  Home
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,6 +26,12 @@ export function Sidebar({ className }: SidebarProps) {
     {
       title: "MENU",
       items: [
+        {
+          label: "Home",
+          icon: Home,
+          href: "/",
+          active: pathname === "/",
+        },
         {
           label: "Dashboard",
           icon: LayoutGrid,

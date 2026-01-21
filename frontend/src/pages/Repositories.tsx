@@ -251,7 +251,7 @@ export default function Repositories() {
             </div>
             
             <Button asChild className="w-full md:w-auto rounded-xl shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-black font-bold">
-                <Link to="/subscription">Upgrade for Unlimited</Link>
+                <Link to="/dashboard/subscription">Upgrade for Unlimited</Link>
             </Button>
         </div>
       )}
