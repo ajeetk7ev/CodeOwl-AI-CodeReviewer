@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PublicRoute from "@/components/PublicRoute";
 
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -17,7 +18,9 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+        </Route>
         
         {/* Dashboard Routes wrapped in Layout and ProtectedRoute */}
         <Route element={<ProtectedRoute />}>

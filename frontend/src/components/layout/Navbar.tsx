@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Code2, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 
 const navItems = [
   { name: "Features", href: "#features" },
@@ -11,6 +12,7 @@ const navItems = [
 ];
 
 export default function Navbar() {
+  const { user } = useAuthStore();
   const location = useLocation();
   const currentPath = location.pathname + location.hash;
 
@@ -47,15 +49,23 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link 
-            to="/login" 
-            className="hidden sm:block text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-4"
-          >
-            Login
-          </Link>
-          <Button asChild size="sm" className="rounded-full px-6 h-9 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
-            <Link to="/login">Get Started</Link>
-          </Button>
+          {user ? (
+            <Button asChild size="sm" className="rounded-full px-6 h-9 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Link 
+                to="/login" 
+                className="hidden sm:block text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-4"
+              >
+                Login
+              </Link>
+              <Button asChild size="sm" className="rounded-full px-6 h-9 transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-primary/20">
+                <Link to="/login">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>
