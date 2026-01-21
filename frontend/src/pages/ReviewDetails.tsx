@@ -112,7 +112,89 @@ export default function ReviewDetails() {
                </CardHeader>
                <CardContent className="p-0">
                    <div className="p-8 prose prose-invert prose-pre:bg-[#050505] prose-pre:border prose-pre:border-[#1F1F1F] prose-pre:rounded-xl prose-code:text-primary prose-a:text-primary max-w-none">
-                      <ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ ...props }) => (
+                            <h1
+                              className="text-3xl font-extrabold text-blue-400 mt-8 mb-4 border-b border-gray-800 pb-2"
+                              {...props}
+                            />
+                          ),
+                          h2: ({ ...props }) => (
+                            <h2
+                              className="text-2xl font-bold text-purple-400 mt-8 mb-4"
+                              {...props}
+                            />
+                          ),
+                          h3: ({ ...props }) => (
+                            <h3
+                              className="text-xl font-bold text-teal-400 mt-6 mb-3"
+                              {...props}
+                            />
+                          ),
+                          ul: ({ ...props }) => (
+                            <ul
+                              className="list-disc pl-6 space-y-2 my-4 text-gray-300 marker:text-gray-500"
+                              {...props}
+                            />
+                          ),
+                          ol: ({ ...props }) => (
+                            <ol
+                              className="list-decimal pl-6 space-y-2 my-4 text-gray-300 marker:text-gray-500"
+                              {...props}
+                            />
+                          ),
+                          li: ({ ...props }) => (
+                            <li className="leading-relaxed pl-1" {...props} />
+                          ),
+                          p: ({ ...props }) => (
+                            <p
+                              className="leading-7 text-gray-300 mb-4"
+                              {...props}
+                            />
+                          ),
+                          strong: ({ ...props }) => (
+                            <strong
+                              className="font-bold text-white bg-white/5 px-1 rounded"
+                              {...props}
+                            />
+                          ),
+                          blockquote: ({ ...props }) => (
+                            <blockquote
+                              className="border-l-4 border-primary/50 pl-4 py-1 italic text-gray-400 my-4 bg-gray-900/30 rounded-r"
+                              {...props}
+                            />
+                          ),
+                          code: ({
+                            node,
+                            inline,
+                            className,
+                            children,
+                            ...props
+                          }: any) => {
+                            const match = /language-(\w+)/.exec(
+                              className || "",
+                            );
+                            return !inline ? (
+                              <div className="relative group">
+                                <code
+                                  className={`${className} block bg-[#0F0F0F] p-4 rounded-lg border border-[#222] overflow-x-auto text-sm my-4`}
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              </div>
+                            ) : (
+                              <code
+                                className="bg-[#1A1A1A] text-primary px-1.5 py-0.5 rounded text-sm font-mono border border-[#2A2A2A]"
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                        }}
+                      >
                         {review.content}
                       </ReactMarkdown>
                    </div>
