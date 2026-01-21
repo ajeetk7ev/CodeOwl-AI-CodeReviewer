@@ -32,7 +32,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/repos", repoRoutes);
+app.use("/api/repositories", repoRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reviews", reviewRoutes);

@@ -1,23 +1,19 @@
 import express from "express";
 import passport from "../config/passport";
-import {
-  githubCallback,
-  getMe,
-  logout,
-} from "../controllers/authController";
+import { githubCallback, getMe, logout } from "../controllers/authController";
 import { protect } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
 router.get(
   "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
+  passport.authenticate("github", { scope: ["user:email", "repo"] }),
 );
 
 router.get(
   "/github/callback",
   passport.authenticate("github", { session: false }),
-  githubCallback
+  githubCallback,
 );
 
 router.get("/me", protect, getMe);

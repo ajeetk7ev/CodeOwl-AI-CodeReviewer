@@ -1,15 +1,16 @@
-import OpenAI from "openai";
+import { pinecone } from "../config/pinecone";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+export const createEmbedding = async (text: string): Promise<number[]> => {
+  // Use Pinecone's native inference for llama-text-embed-v2
+  const response = await pinecone.inference.embed(
+    "llama-text-embed-v2",
+    [text],
+    {
+      inputType: "passage",
+      truncate: "END",
+      parameters: { dimension: 2048 },
+    } as any,
+  );
 
-export const createEmbedding = async (text: string) => {
-  const response = await client.embeddings.create({
-    model: "meta-llama/llama-text-embed-v2",
-    input: text,
-  });
-
-  return response.data[0].embedding;
+  return (response as any).data[0].values as number[];
 };

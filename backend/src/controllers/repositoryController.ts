@@ -14,8 +14,19 @@ export const getGithubRepos = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "GitHub not connected" });
     }
 
-    const repos = await fetchUserRepositories(user.githubToken);
+    const page = Number(req.query.page) || 1;
+    const perPage = Number(req.query.perPage) || 15;
+    const visibility = (req.query.visibility as any) || "all";
 
+    const repos = await fetchUserRepositories(
+      user.githubToken,
+      page,
+      perPage,
+      visibility,
+    );
+    console.log(
+      `[Repository] Found ${repos.length} repos for user ${userId} (Page: ${page}, Visibility: ${visibility})`,
+    );
     res.json(repos);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch repos" });
@@ -35,6 +46,7 @@ import { connectRepoSchema } from "../utils/validation";
 export const connectRepository = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    const user = await User.findById(userId);
 
     const result = connectRepoSchema.safeParse(req.body);
     if (!result.success) {
@@ -51,6 +63,12 @@ export const connectRepository = async (req: Request, res: Response) => {
       private: isPrivate,
       defaultBranch,
     } = req.body;
+
+    if (!githubRepoId) {
+      return res
+        .status(400)
+        .json({ message: "GitHub Repository ID is required" });
+    }
 
     const exists = await Repository.findOne({
       userId,

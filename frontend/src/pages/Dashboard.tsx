@@ -108,7 +108,7 @@ export default function Dashboard() {
             </p>
          </div>
          <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
-             <Link to="/dashboard/repositories">
+             <Link to="/dashboard/repositories?tab=all">
                  <GitBranch className="mr-2 h-4 w-4" />
                  Connect Repository
              </Link>

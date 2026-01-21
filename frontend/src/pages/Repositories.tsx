@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -23,45 +24,106 @@ import  type { Repository, GithubRepository } from "@/types/api";
 import { cn } from "@/lib/utils";
 
 export default function Repositories() {
-  const [activeTab, setActiveTab] = useState<"connected" | "all">("connected");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as "connected" | "all") || "connected";
+  const [activeTab, setActiveTab] = useState<"connected" | "all">(initialTab);
   const [connectedRepos, setConnectedRepos] = useState<Repository[]>([]);
   const [githubRepos, setGithubRepos] = useState<GithubRepository[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [processingId, setProcessingId] = useState<string | number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  const handleTabChange = (tab: "connected" | "all") => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   useEffect(() => {
     fetchConnectedRepos();
   }, []);
 
+  // Poll for indexing status if any repo is not indexed
   useEffect(() => {
-    if (activeTab === "all" && githubRepos.length === 0) {
-      fetchGithubRepos();
+    const hasIndexingRepos = connectedRepos.some(repo => !repo.indexed);
+    if (hasIndexingRepos) {
+      const interval = setInterval(() => {
+        api.get<Repository[]>("/repositories/connected").then(res => {
+          setConnectedRepos(res.data);
+        }).catch(err => console.error("Polling failed", err));
+      }, 5000);
+      return () => clearInterval(interval);
     }
-  }, [activeTab]);
+  }, [connectedRepos]);
+
+  useEffect(() => {
+    if (activeTab === "all") {
+      refreshGithubRepos();
+    }
+  }, [activeTab, visibilityFilter]);
 
   const fetchConnectedRepos = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await api.get<Repository[]>("/repositories/connected");
       setConnectedRepos(res.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch connected repos", error);
+      setError("Failed to load connected repositories. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchGithubRepos = async () => {
-    setLoading(true);
+  const fetchGithubRepos = async (page = 1, append = false) => {
+    if (page === 1) setLoading(true);
+    else setFetchingMore(true);
+    
+    setError(null);
     try {
-      const res = await api.get<GithubRepository[]>("/repositories/github");
-      setGithubRepos(res.data);
-    } catch (error) {
+      const perPage = 15;
+      const res = await api.get<GithubRepository[]>(`/repositories/github?page=${page}&perPage=${perPage}&visibility=${visibilityFilter}`);
+      
+      if (append) {
+        setGithubRepos(prev => [...prev, ...res.data]);
+      } else {
+        setGithubRepos(res.data);
+      }
+      
+      setHasMore(res.data.length === perPage);
+      setCurrentPage(page);
+    } catch (error: any) {
        console.error("Failed to fetch github repos", error);
+       setError(error.response?.data?.message || "Failed to fetch repositories from GitHub.");
     } finally {
       setLoading(false);
+      setFetchingMore(false);
     }
+  };
+
+  const lastRepoRef = useCallback((node: HTMLDivElement) => {
+    if (loading || fetchingMore) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchGithubRepos(currentPage + 1, true);
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, fetchingMore, hasMore, currentPage]);
+
+  const refreshGithubRepos = () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchGithubRepos(1, false);
   };
 
   const handleConnect = async (repo: GithubRepository) => {
@@ -78,7 +140,7 @@ export default function Repositories() {
       
       const res = await api.post<Repository>("/repositories/connect", payload);
       setConnectedRepos([...connectedRepos, res.data]);
-      setActiveTab("connected");
+      handleTabChange("connected");
     } catch (error) {
       console.error("Failed to connect repo", error);
       alert("Failed to connect repository. It might already be connected.");
@@ -86,6 +148,7 @@ export default function Repositories() {
       setProcessingId(null);
     }
   };
+
 
   const handleDisconnect = async (id: string) => {
     if (!confirm("Are you sure you want to disconnect this repository? Reviews will be preserved but sync will stop.")) return;
@@ -118,43 +181,103 @@ export default function Repositories() {
            <h1 className="text-3xl font-bold tracking-tight text-white">Repositories</h1>
            <p className="text-muted-foreground mt-1">Manage your codebase connections and sync status.</p>
         </div>
-        <div className="flex items-center gap-1 p-1 bg-[#141414] border border-[#262626] rounded-xl shadow-inner">
-           <button 
-              onClick={() => setActiveTab("connected")}
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                activeTab === "connected" 
-                    ? "bg-[#262626] text-white shadow-sm" 
-                    : "text-muted-foreground hover:text-white"
-              )}
-            >
-              Connected
-           </button>
-           <button 
-              onClick={() => setActiveTab("all")}
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                activeTab === "all" 
-                    ? "bg-[#262626] text-white shadow-sm" 
-                    : "text-muted-foreground hover:text-white"
-              )}
-            >
-              Add New
-           </button>
+        <div className="flex items-center gap-3">
+            {activeTab === "all" && (
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-10 w-10 rounded-xl bg-[#0C0C0C] border-[#1F1F1F] hover:bg-primary/5 hover:text-primary transition-all shadow-lg"
+                    onClick={() => refreshGithubRepos()}
+                    disabled={loading || fetchingMore}
+                >
+                    <RefreshCw className={cn("h-4 w-4", (loading || fetchingMore) && "animate-spin")} />
+                </Button>
+            )}
+            <div className="flex items-center gap-1 p-1 bg-[#141414] border border-[#262626] rounded-xl shadow-inner h-10">
+                <button 
+                    onClick={() => handleTabChange("connected")}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                        activeTab === "connected" 
+                            ? "bg-[#262626] text-white shadow-sm" 
+                            : "text-muted-foreground hover:text-white"
+                    )}
+                >
+                    Connected
+                </button>
+                <button 
+                    onClick={() => handleTabChange("all")}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                        activeTab === "all" 
+                            ? "bg-[#262626] text-white shadow-sm" 
+                            : "text-muted-foreground hover:text-white"
+                    )}
+                >
+                    Add New
+                </button>
+            </div>
         </div>
       </div>
 
-      <div className="flex items-center w-full max-w-md relative group">
-         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-         <Input 
-            placeholder="Search repositories..." 
-            className="pl-10 h-11 bg-[#0C0C0C] border-[#1F1F1F] rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all shadow-lg" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-         />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center w-full max-w-md relative group">
+           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+           <Input 
+              placeholder="Search repositories..." 
+              className="pl-10 h-11 bg-[#0C0C0C] border-[#1F1F1F] rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all shadow-lg" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+           />
+        </div>
+
+        {activeTab === "all" && (
+            <div className="flex items-center gap-1 p-1 bg-[#141414] border border-[#262626] rounded-xl h-11 w-full md:w-auto">
+                <button 
+                    onClick={() => setVisibilityFilter("all")}
+                    className={cn(
+                        "flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider",
+                        visibilityFilter === "all" ? "bg-[#262626] text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                    )}
+                >
+                    All
+                </button>
+                <button 
+                    onClick={() => setVisibilityFilter("public")}
+                    className={cn(
+                        "flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider",
+                        visibilityFilter === "public" ? "bg-[#262626] text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                    )}
+                >
+                    Public
+                </button>
+                <button 
+                    onClick={() => setVisibilityFilter("private")}
+                    className={cn(
+                        "flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider",
+                        visibilityFilter === "private" ? "bg-[#262626] text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                    )}
+                >
+                    Private
+                </button>
+            </div>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
+        {error && (
+            <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-sm font-medium flex items-center justify-between"
+            >
+                <span>{error}</span>
+                <Button variant="ghost" size="sm" className="h-8 text-red-500 hover:bg-red-500/10" onClick={() => error.includes("GitHub") ? (window.location.href="/api/auth/github") : fetchConnectedRepos()}>
+                    {error.includes("GitHub") ? "Connect GitHub" : "Retry"}
+                </Button>
+            </motion.div>
+        )}
         <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
@@ -175,7 +298,7 @@ export default function Repositories() {
                             </div>
                             <h3 className="text-xl font-semibold text-white mb-2">No repositories connected</h3>
                             <p className="text-muted-foreground mb-8 text-center max-w-sm">Connect a repository to start generating AI reviews for your pull requests.</p>
-                            <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 px-8" onClick={() => setActiveTab("all")}>
+                            <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 px-8" onClick={() => handleTabChange("all")}>
                                 <Plus className="mr-2 h-5 w-5" />
                                 Connect Your First Repo
                             </Button>
@@ -250,19 +373,32 @@ export default function Repositories() {
                     )}
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                    {filteredGithubRepos.map((repo) => (
-                        <Card key={repo.id} className="bg-[#0C0C0C] border-[#1F1F1F] rounded-2xl shadow-xl hover:border-primary/30 transition-all duration-300">
-                            <CardHeader className="pb-4">
-                                <div className="flex items-center justify-between mb-1">
-                                    <CardTitle className="text-lg font-bold text-white truncate pr-4">{repo.name}</CardTitle>
-                                    <Badge variant="outline" className="border-[#262626]">{repo.private ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}</Badge>
+                <div className="space-y-6">
+                    <div className="grid gap-3 grid-cols-1">
+                        {filteredGithubRepos.map((repo) => (
+                        <Card 
+                            key={repo.id} 
+                            className="bg-[#0C0C0C] border-[#1F1F1F] rounded-2xl shadow-xl hover:border-primary/30 transition-all duration-300 overflow-hidden"
+                        >
+                            <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
+                                        <GitBranch className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <CardTitle className="text-base font-bold text-white truncate">{repo.name}</CardTitle>
+                                            <Badge variant="outline" className="h-5 text-[10px] border-[#262626] font-mono">
+                                                {repo.private ? <Lock className="h-2.5 w-2.5 mr-1" /> : <Globe className="h-2.5 w-2.5 mr-1" />}
+                                                {repo.private ? "PRIVATE" : "PUBLIC"}
+                                            </Badge>
+                                        </div>
+                                        <CardDescription className="text-muted-foreground truncate text-xs font-mono">{repo.full_name}</CardDescription>
+                                    </div>
                                 </div>
-                                <CardDescription className="text-muted-foreground truncate text-xs">{repo.full_name}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
+                                
                                 <Button 
-                                    className="w-full h-11 rounded-xl shadow-lg shadow-primary/5 hover:scale-[1.01] transition-transform active:scale-[0.99]" 
+                                    className="w-full sm:w-auto h-11 rounded-xl px-8 shadow-lg shadow-primary/5 hover:scale-[1.02] transition-transform active:scale-[0.98]" 
                                     onClick={() => handleConnect(repo)}
                                     disabled={processingId === repo.id}
                                 >
@@ -274,18 +410,41 @@ export default function Repositories() {
                                     ) : (
                                         <>
                                             <Plus className="mr-2 h-4 w-4" />
-                                            Connect Repository
+                                            Connect
                                         </>
                                     )}
                                 </Button>
-                            </CardContent>
+                            </div>
                         </Card>
                     ))}
-                    {filteredGithubRepos.length === 0 && !loading && (
-                        <div className="col-span-full text-center text-muted-foreground py-20 bg-[#0C0C0C]/30 border border-[#1F1F1F] border-dashed rounded-3xl">
-                            No repositories found matching "{searchQuery}"
+                    
+                    {/* Infinite Scroll Trigger */}
+                    {hasMore && !loading && (
+                        <div ref={lastRepoRef} className="h-10 flex items-center justify-center">
+                            {fetchingMore && <Loader2 className="h-6 w-6 text-primary animate-spin" />}
                         </div>
                     )}
+
+                    {filteredGithubRepos.length === 0 && !loading && !fetchingMore && (
+                        <div className="col-span-full flex flex-col items-center justify-center text-center py-20 bg-[#0C0C0C]/30 border border-[#1F1F1F] border-dashed rounded-3xl">
+                            <p className="text-muted-foreground mb-6 max-w-sm">
+                                {searchQuery 
+                                    ? `No repositories found matching "${searchQuery}"`
+                                    : "No repositories discovered. You might need to reconnect your GitHub account to refresh permissions."}
+                            </p>
+                            {!searchQuery && (
+                                <Button 
+                                    variant="secondary" 
+                                    className="rounded-xl shadow-lg"
+                                    onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`}
+                                >
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Reconnect GitHub
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    </div>
                 </div>
             )}
         </motion.div>
