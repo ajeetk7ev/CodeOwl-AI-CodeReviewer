@@ -4,10 +4,32 @@ export const redisOptions = {
   maxRetriesPerRequest: null,
 };
 
-export const redisConnection = new IORedis(
-  process.env.REDIS_URL as string,
-  redisOptions,
-);
+const getClient = () => {
+  if (process.env.REDIS_URL) {
+    return new IORedis(process.env.REDIS_URL, redisOptions);
+  }
 
-export const createRedisConnection = () =>
-  new IORedis(process.env.REDIS_URL as string, redisOptions);
+  return new IORedis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT || "6379"),
+    password: process.env.REDIS_PASSWORD,
+    username: "default",
+    ...redisOptions,
+  });
+};
+
+export const redisConnection = getClient();
+
+redisConnection.on("connect", () => {
+  console.log("Redis connected");
+});
+
+redisConnection.on("ready", () => {
+  console.log("Redis is ready");
+});
+
+redisConnection.on("error", (err) => {
+  console.error("Redis connection error:", err);
+});
+
+export const createRedisConnection = () => getClient();
