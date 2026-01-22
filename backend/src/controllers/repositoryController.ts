@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Repository from "../models/Repository";
 import User from "../models/User";
 import {
@@ -8,14 +8,26 @@ import {
 } from "../services/githubService";
 import { indexQueue } from "../queue/indexQueue";
 import { connectRepoSchema } from "../utils/validation";
+import { deleteRepoVectors } from "../services/pineconeService";
+import { asyncHandler } from "../middlewares/errorHandler";
+import {
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  AuthorizationError,
+  ExternalServiceError,
+} from "../utils/errors";
+import { successResponse } from "../utils/response";
 
-export const getGithubRepos = async (req: Request, res: Response) => {
-  try {
+export const getGithubRepos = asyncHandler(
+  async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const user = await User.findById(userId);
 
     if (!user?.githubToken) {
-      return res.status(400).json({ message: "GitHub not connected" });
+      throw new ValidationError(
+        "GitHub not connected. Please reconnect your GitHub account.",
+      );
     }
 
     const page = Number(req.query.page) || 1;
@@ -28,32 +40,33 @@ export const getGithubRepos = async (req: Request, res: Response) => {
       perPage,
       visibility,
     );
-    res.json(repos);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch repos" });
-  }
-};
 
-export const getConnectedRepos = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
-  const repos = await Repository.find({ userId });
-  res.json(repos);
-};
+    res.json(successResponse(repos, "Repositories fetched successfully"));
+  },
+);
 
-export const connectRepository = async (req: Request, res: Response) => {
-  try {
+export const getConnectedRepos = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const repos = await Repository.find({ userId });
+    res.json(successResponse(repos));
+  },
+);
+
+export const connectRepository = asyncHandler(
+  async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const user = await User.findById(userId);
 
     if (!user?.githubToken) {
-      return res.status(400).json({ message: "GitHub not connected" });
+      throw new ValidationError(
+        "GitHub not connected. Please reconnect your GitHub account.",
+      );
     }
 
     const result = connectRepoSchema.safeParse(req.body);
     if (!result.success) {
-      return res
-        .status(400)
-        .json({ message: "Invalid input", errors: result.error.format() });
+      throw new ValidationError("Invalid repository data", "VALIDATION_ERROR");
     }
 
     const {
@@ -71,25 +84,21 @@ export const connectRepository = async (req: Request, res: Response) => {
     });
 
     if (exists) {
-      return res.status(400).json({ message: "Repository already connected" });
+      throw new ConflictError("Repository already connected");
     }
 
     // 0. Check Limits for Free Plan
     if (user.plan === "free") {
       const connectedCount = await Repository.countDocuments({ userId });
       if (connectedCount >= 5) {
-        return res.status(403).json({
-          message:
-            "Free tier limit reached (5 repositories). Please upgrade to Pro for unlimited access.",
-          limitReached: true,
-        });
+        throw new AuthorizationError(
+          "Free tier limit reached (5 repositories). Please upgrade to Pro for unlimited access.",
+          "FREE_LIMIT_REACHED",
+        );
       }
     }
 
-    // 1. Setup Webhook on GitHub
-    const webhookId = await setupWebhook(user.githubToken, owner, name);
-
-    // 2. Create DB Record
+    // 1. Create DB Record first
     const repo = await Repository.create({
       userId,
       githubRepoId,
@@ -99,48 +108,81 @@ export const connectRepository = async (req: Request, res: Response) => {
       private: isPrivate,
       defaultBranch,
       isConnected: true,
-      githubWebhookId: webhookId ? String(webhookId) : undefined,
+      indexingStatus: "queued",
     });
 
-    await indexQueue.add("index-repo", {
-      repoId: repo._id,
-    });
+    // 2. Add to indexing queue
+    await indexQueue.add(
+      "repo-indexing",
+      {
+        repoId: repo._id,
+      },
+      {
+        jobId: `index-${repo._id}`, // Stable ID prevents duplicate indexing
+        removeOnComplete: true,
+        removeOnFail: false, // Keep failed jobs for debugging
+      },
+    );
 
-    res.json(repo);
-  } catch (error) {
-    console.error("[Repository] Connection failed:", error);
-    res.status(500).json({ message: "Failed to connect repo" });
-  }
-};
+    // 3. Setup webhook asynchronously (non-blocking)
+    setupWebhook(user.githubToken, owner, name)
+      .then((webhookId) => {
+        if (webhookId) {
+          repo.githubWebhookId = String(webhookId);
+          return repo.save();
+        }
+      })
+      .catch((err) => {
+        console.error(
+          `[Repository] Async webhook setup failed for ${fullName}:`,
+          err.message,
+        );
+        // Don't fail the connection if webhook setup fails
+      });
 
-export const disconnectRepository = async (req: Request, res: Response) => {
-  try {
+    // 4. Return immediately
+    res.json(successResponse(repo, "Repository connected successfully"));
+  },
+);
+
+export const disconnectRepository = asyncHandler(
+  async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
-    const repoId = req.params.id;
+    const repoId = req.params.id as string;
 
     const repo = await Repository.findOne({ _id: repoId, userId });
     if (!repo) {
-      return res.status(404).json({ message: "Repository not found" });
+      throw new NotFoundError("Repository");
     }
 
     const user = await User.findById(userId);
 
     // 1. Remove Webhook from GitHub
     if (user?.githubToken && repo.githubWebhookId) {
-      await removeWebhook(
-        user.githubToken,
-        repo.owner,
-        repo.name,
-        Number(repo.githubWebhookId),
-      );
+      try {
+        await removeWebhook(
+          user.githubToken,
+          repo.owner,
+          repo.name,
+          Number(repo.githubWebhookId),
+        );
+      } catch (err: any) {
+        console.error(`[Repository] Failed to remove webhook:`, err.message);
+        // Continue with disconnection even if webhook removal fails
+      }
     }
 
-    // 2. Delete DB Record
+    // 2️⃣ Delete Pinecone embeddings
+    try {
+      await deleteRepoVectors(repoId);
+    } catch (err: any) {
+      console.error(`[Repository] Failed to delete vectors:`, err.message);
+      // Continue with disconnection
+    }
+
+    // 3. Delete DB Record
     await Repository.deleteOne({ _id: repoId });
 
-    res.json({ message: "Repository disconnected" });
-  } catch (error) {
-    console.error("[Repository] Disconnection failed:", error);
-    res.status(500).json({ message: "Failed to disconnect repo" });
-  }
-};
+    res.json(successResponse(null, "Repository disconnected successfully"));
+  },
+);

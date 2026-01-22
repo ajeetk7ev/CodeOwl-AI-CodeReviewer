@@ -67,11 +67,12 @@ export default function Repositories() {
 
   // Poll for indexing status if any repo is not indexed
   useEffect(() => {
-    const hasIndexingRepos = connectedRepos.some(repo => !repo.indexed);
+    const hasIndexingRepos = Array.isArray(connectedRepos) && connectedRepos.some(repo => !repo.indexed);
     if (hasIndexingRepos) {
       const interval = setInterval(() => {
-        api.get<Repository[]>("/repositories/connected").then(res => {
-          setConnectedRepos(res.data);
+        api.get<{ success: true; data: Repository[] }>("/repositories/connected").then(res => {
+          const data = res.data?.data || res.data;
+          setConnectedRepos(Array.isArray(data) ? data : []);
         }).catch(err => console.error("Polling failed", err));
       }, 5000);
       return () => clearInterval(interval);
@@ -88,8 +89,9 @@ export default function Repositories() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<Repository[]>("/repositories/connected");
-      setConnectedRepos(res.data);
+      const res = await api.get<{ success: true; data: Repository[] }>("/repositories/connected");
+      const data = res.data?.data || res.data;
+      setConnectedRepos(Array.isArray(data) ? data : []);
     } catch (error: any) {
       console.error("Failed to fetch connected repos", error);
       setError("Failed to load connected repositories. Please try again.");
@@ -105,15 +107,17 @@ export default function Repositories() {
     setError(null);
     try {
       const perPage = 15;
-      const res = await api.get<GithubRepository[]>(`/repositories/github?page=${page}&perPage=${perPage}&visibility=${visibilityFilter}`);
+      const res = await api.get<{ success: true; data: GithubRepository[] }>(`/repositories/github?page=${page}&perPage=${perPage}&visibility=${visibilityFilter}`);
+      const data = res.data?.data || res.data;
+      const reposArray = Array.isArray(data) ? data : [];
       
       if (append) {
-        setGithubRepos(prev => [...prev, ...res.data]);
+        setGithubRepos(prev => [...prev, ...reposArray]);
       } else {
-        setGithubRepos(res.data);
+        setGithubRepos(reposArray);
       }
       
-      setHasMore(res.data.length === perPage);
+      setHasMore(reposArray.length === perPage);
       setCurrentPage(page);
     } catch (error: any) {
        console.error("Failed to fetch github repos", error);
@@ -155,8 +159,13 @@ export default function Repositories() {
         defaultBranch: repo.default_branch
       };
       
-      const res = await api.post<Repository>("/repositories/connect", payload);
-      setConnectedRepos([...connectedRepos, res.data]);
+      const res = await api.post<{ success: true; data: Repository }>(
+        "/repositories/connect", 
+        payload,
+      );
+      const newRepo = res.data?.data || res.data;
+      setConnectedRepos(Array.isArray(connectedRepos) ? [...connectedRepos, newRepo] : [newRepo]);
+      toast.success("Repository connected! Indexing started.");
       handleTabChange("connected");
     } catch (error: any) {
       console.error("Failed to connect repo", error);
@@ -184,7 +193,7 @@ export default function Repositories() {
     
     try {
       await api.delete(`/repositories/${id}`);
-      setConnectedRepos(connectedRepos.filter(r => r._id !== id));
+      setConnectedRepos(Array.isArray(connectedRepos) ? connectedRepos.filter(r => r._id !== id) : []);
       toast.success("Repository disconnected successfully");
     } catch (error) {
       console.error("Failed to disconnect", error);
@@ -195,14 +204,14 @@ export default function Repositories() {
   };
 
   const filteredGithubRepos = githubRepos.filter(repo => {
-    const isConnected = connectedRepos.some(c => c.githubRepoId === String(repo.id));
+    const isConnected = Array.isArray(connectedRepos) && connectedRepos.some(c => c.githubRepoId === String(repo.id));
     const matchesSearch = repo.full_name.toLowerCase().includes(searchQuery.toLowerCase());
     return !isConnected && matchesSearch;
   });
 
-  const filteredConnectedRepos = connectedRepos.filter(repo => 
-    repo.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConnectedRepos = Array.isArray(connectedRepos) 
+    ? connectedRepos.filter(repo => repo.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-10">
@@ -259,7 +268,7 @@ export default function Repositories() {
                 <div>
                     <h3 className="text-lg font-bold text-white">Free Tier Usage</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                        You've connected <span className="text-primary font-bold">{connectedRepos.length}</span> out of <span className="text-white font-bold">5</span> available repositories.
+                        You've connected <span className="text-primary font-bold">{Array.isArray(connectedRepos) ? connectedRepos.length : 0}</span> out of <span className="text-white font-bold">5</span> available repositories.
                     </p>
                 </div>
             </div>
@@ -267,7 +276,7 @@ export default function Repositories() {
             <div className="w-full md:w-64 h-3 bg-[#0C0C0C] rounded-full overflow-hidden border border-[#262626]">
                 <div 
                     className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.5)] transition-all duration-1000" 
-                    style={{ width: `${Math.min((connectedRepos.length / 5) * 100, 100)}%` }}
+                    style={{ width: `${Math.min(((Array.isArray(connectedRepos) ? connectedRepos.length : 0) / 5) * 100, 100)}%` }}
                 />
             </div>
             
@@ -475,7 +484,7 @@ export default function Repositories() {
                                 <Button 
                                     className="w-full sm:w-auto h-11 rounded-xl px-8 shadow-lg shadow-primary/5 hover:scale-[1.02] transition-transform active:scale-[0.98]" 
                                     onClick={() => handleConnect(repo)}
-                                    disabled={processingId === repo.id || (user?.plan === "free" && connectedRepos.length >= 5)}
+                                    disabled={processingId === repo.id || (user?.plan === "free" && (Array.isArray(connectedRepos) ? connectedRepos.length : 0) >= 5)}
                                 >
                                     {processingId === repo.id ? (
                                         <>

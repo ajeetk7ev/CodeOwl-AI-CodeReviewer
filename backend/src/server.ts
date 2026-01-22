@@ -57,7 +57,45 @@ app.use("/health", (_, res) => {
   });
 });
 
+// Import error handlers
+import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
+
+// 404 handler for undefined routes (must be after all routes)
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
+
+// Process-level error handlers to prevent crashes
+process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
+  console.error("⚠️ Unhandled Rejection at:", promise, "reason:", reason);
+  // Log to monitoring service in production
+  if (process.env.NODE_ENV === "production") {
+    // Optionally restart the server gracefully
+    console.error("Server will restart due to unhandled rejection");
+    process.exit(1);
+  }
+});
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("💥 Uncaught Exception:", error);
+  console.error("Server will shut down");
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("👋 SIGTERM received, shutting down gracefully");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("👋 SIGINT received, shutting down gracefully");
+  process.exit(0);
+});
+
 app.listen(PORT, async () => {
   await dbConnect();
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV || "development"}`);
 });

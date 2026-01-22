@@ -7,7 +7,30 @@ export interface User {
   githubUsername?: string;
   githubToken?: string;
   plan: "free" | "pro";
+  settings?: {
+    theme: "light" | "dark" | "system";
+    notifications: {
+      email: boolean;
+      push: boolean;
+      reviewComments: boolean;
+      prUpdates: boolean;
+      weeklyDigest: boolean;
+    };
+    privacy: {
+      profileVisibility: "public" | "private";
+      showActivity: boolean;
+      allowAnalytics: boolean;
+    };
+    language: string;
+  };
+  apiKeys?: Array<{
+    name: string;
+    key: string;
+    createdAt: string;
+    lastUsed?: string;
+  }>;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Repository {
@@ -57,6 +80,56 @@ export interface Review {
   githubCommentUrl?: string;
   createdAt: string;
   updatedAt: string;
+
+  // Structured review data for UI (CodeRabbit-like features)
+  summary?: {
+    filesChanged: number;
+    linesAdded: number;
+    linesDeleted: number;
+    riskLevel: "low" | "medium" | "high" | "critical";
+    recommendation:
+      | "approve"
+      | "approve_with_changes"
+      | "request_changes"
+      | "block";
+  };
+
+  stats?: {
+    security: { count: number; severity: string };
+    bugs: { count: number; severity: string };
+    performance: { count: number; severity: string };
+    quality: { count: number; severity: string };
+  };
+
+  sections?: {
+    changeType: string;
+    security: Array<{
+      severity: string;
+      issue: string;
+      fix: string;
+      line?: number;
+    }>;
+    bugs: Array<{
+      severity: string;
+      issue: string;
+      fix: string;
+      line?: number;
+    }>;
+    performance: Array<{
+      severity: string;
+      issue: string;
+      fix: string;
+      line?: number;
+    }>;
+    suggestions: Array<{
+      title: string;
+      before: string;
+      after: string;
+      reason: string;
+    }>;
+    positives: string[];
+    testing: { included: boolean; coverage: string; suggestions: string[] };
+  };
 }
 
 // Response Types
@@ -98,4 +171,61 @@ export interface UsageStats {
 export interface GithubStatus {
   connected: boolean;
   username?: string;
+}
+
+// Settings interfaces
+export interface NotificationSettings {
+  email: boolean;
+  push: boolean;
+  reviewComments: boolean;
+  prUpdates: boolean;
+  weeklyDigest: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+}
+
+export interface PrivacySettings {
+  profileVisibility: "public" | "private";
+  showActivity: boolean;
+  allowAnalytics: boolean;
+  dataRetention: "1year" | "2years" | "forever";
+}
+
+export interface UserSettings {
+  theme: "light" | "dark" | "system";
+  notifications: NotificationSettings;
+  privacy: PrivacySettings;
+  language: string;
+  timezone: string;
+}
+
+export interface ApiKey {
+  name: string;
+  key: string;
+  createdAt: string;
+  lastUsed?: string;
+  permissions?: string[];
+}
+
+export interface UserSession {
+  sessionId: string;
+  device: string;
+  ip: string;
+  lastActive: string;
+  createdAt: string;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  setupComplete: boolean;
+}
+
+export interface AccountDeletionRequest {
+  reason?: string;
+  confirmText: string;
+}
+
+export interface DataExportResponse {
+  downloadUrl: string;
+  expiresAt: string;
 }

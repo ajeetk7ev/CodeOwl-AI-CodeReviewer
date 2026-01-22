@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import {  useSearchParams } from "react-router-dom";
-import { Github, Loader2, Code2, Sparkles, ArrowRight, ShieldCheck, Zap, GitPullRequest } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Github, Loader2, Code2, Sparkles, ArrowRight, ShieldCheck, Zap, GitPullRequest, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -21,6 +22,7 @@ export default function Login() {
     setLoading(true);
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
     const baseUrl = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
+    console.log(baseUrl);
     
     setTimeout(() => {
         window.location.href = `${baseUrl}/auth/github`;
@@ -28,7 +30,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground overflow-hidden">
+    <div className="min-h-screen flex bg-background text-foreground overflow-hidden relative">
+        <div className="absolute lg:fixed top-6 left-6 md:top-8 md:left-8 lg:top-8 lg:left-8 z-20">
+            <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="rounded-full md:rounded-xl h-12 w-12 md:h-auto md:w-auto md:px-4 md:py-2 flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-foreground bg-transparent md:bg-white/5 hover:bg-white/10 border-transparent md:border md:border-white/10 transition-all"
+            >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="hidden md:inline font-bold">Back</span>
+            </Button>
+        </div>
         {/* Left Side: Visual/Social Proof (Hidden on Mobile) */}
         <div className="hidden lg:flex flex-1 relative flex-col justify-center p-20 overflow-hidden">
             {/* Background Mesh Gradient */}

@@ -63,7 +63,10 @@ export const reviewWorker = new Worker(
       pullRequestId: pr._id,
       repositoryId: repo._id,
       userId: repo.userId,
-      content: reviewContent as string,
+      content: reviewContent.markdown,
+      summary: reviewContent.summary,
+      stats: reviewContent.stats,
+      sections: reviewContent.sections,
       aiModel: "gemini",
     });
 
@@ -74,7 +77,7 @@ export const reviewWorker = new Worker(
       repo.owner,
       repo.name,
       prNumber,
-      reviewContent as string,
+      reviewContent.markdown,
     );
 
     console.log(`[Worker] [PR #${prNumber}] Review completed successfully`);

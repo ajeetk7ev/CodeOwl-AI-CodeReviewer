@@ -9,7 +9,10 @@ import {
   Bot,
   ExternalLink,
   Code2,
-  ShieldCheck
+  ShieldCheck,
+  Shield,
+  AlertTriangle,
+  Zap
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -17,18 +20,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { ReviewSummaryCard } from "@/components/ReviewSummaryCard";
+import { IssueCard } from "@/components/IssueCard";
 import api from "@/services/api";
 import type{ Review, Repository, PullRequest } from "@/types/api";
 
 export default function ReviewDetails() {
   const { id } = useParams();
-  const [review, setReview] = useState<Review | null>(null);
+  const[review, setReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchReview = async () => {
       try {
         const res = await api.get<Review>(`/reviews/${id}`);
+        console.log("Review data", res.data);
         setReview(res.data);
       } catch (error) {
         console.error("Failed to fetch review details", error);
@@ -46,9 +52,10 @@ export default function ReviewDetails() {
                 <Skeleton className="h-10 w-10 rounded-xl bg-secondary/10" />
                 <Skeleton className="h-8 w-64 bg-secondary/10" />
             </div>
-            <div className="grid gap-8 md:grid-cols-3">
-                <div className="md:col-span-2">
-                    <Skeleton className="h-[600px] w-full rounded-2xl bg-secondary/10" />
+            <div className="grid gap-8 lg:grid-cols-3">
+                <div className="lg:col-span-2 space-y-6">
+                    <Skeleton className="h-[400px] w-full rounded-2xl bg-secondary/10" />
+                    <Skeleton className="h-[300px] w-full rounded-2xl bg-secondary/10" />
                 </div>
                 <div>
                     <Skeleton className="h-[300px] w-full rounded-2xl bg-secondary/10" />
@@ -78,6 +85,9 @@ export default function ReviewDetails() {
   const repo = review.repositoryId as Repository;
   const pr = review.pullRequestId as PullRequest;
 
+  // Check if we have structured data
+  const hasStructuredData = review.summary && review.stats && review.sections;
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700 pb-10">
       <div className="flex items-center gap-4 group">
@@ -92,16 +102,123 @@ export default function ReviewDetails() {
          </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
          {/* Main Content */}
-         <div className="md:col-span-2 space-y-8">
+         <div className="lg:col-span-2 space-y-8">
+            {/* Summary Card - Only show if we have structured data */}
+            {hasStructuredData && review.summary && review.stats && (
+              <ReviewSummaryCard summary={review.summary} stats={review.stats} />
+            )}
+
+            {/* Security Issues */}
+            {hasStructuredData && review.sections?.security && review.sections.security.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Shield className="w-6 h-6 text-red-400" />
+                  <h2 className="text-xl font-bold text-white">Security Issues</h2>
+                  <Badge variant="destructive" className="ml-auto">
+                    {review.sections.security.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {review.sections.security.map((issue: any, i: number) => (
+                    <IssueCard
+                      key={i}
+                      severity={issue.severity as any}
+                      title={issue.issue}
+                      description={issue.issue}
+                      fix={issue.fix}
+                      line={issue.line}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Bugs */}
+            {hasStructuredData && review.sections?.bugs && review.sections.bugs.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-6 h-6 text-orange-400" />
+                  <h2 className="text-xl font-bold text-white">Potential Bugs</h2>
+                  <Badge variant="outline" className="ml-auto bg-orange-500/10 text-orange-400 border-orange-500/30">
+                    {review.sections.bugs.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {review.sections.bugs.map((bug: any, i: number) => (
+                    <IssueCard
+                      key={i}
+                      severity={bug.severity as any}
+                      title={bug.issue}
+                      description={bug.issue}
+                      fix={bug.fix}
+                      line={bug.line}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Performance Issues */}
+            {hasStructuredData && review.sections?.performance && review.sections.performance.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-6 h-6 text-yellow-400" />
+                  <h2 className="text-xl font-bold text-white">Performance Concerns</h2>
+                  <Badge variant="outline" className="ml-auto bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+                    {review.sections.performance.length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {review.sections.performance.map((perf: any, i: number) => (
+                    <IssueCard
+                      key={i}
+                      severity={perf.severity as any}
+                      title={perf.issue}
+                      description={perf.issue}
+                      fix={perf.fix}
+                      line={perf.line}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Code Suggestions */}
+            {hasStructuredData && review.sections?.suggestions && review.sections.suggestions.length > 0 && (
+              <section className="space-y-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  💡 Code Quality Suggestions
+                  <Badge variant="outline" className="ml-auto bg-blue-500/10 text-blue-400 border-blue-500/30">
+                    {review.sections.suggestions.length}
+                  </Badge>
+                </h2>
+                <div className="space-y-3">
+                  {review.sections.suggestions.map((suggestion: any, i: number) => (
+                    <IssueCard
+                      key={i}
+                      severity="low"
+                      title={suggestion.title}
+                      description={suggestion.reason}
+                      codeExample={{
+                        before: suggestion.before,
+                        after: suggestion.after,
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Full Markdown Review */}
             <Card className="bg-[#0C0C0C] border-[#1F1F1F] rounded-2xl shadow-2xl overflow-hidden">
                <CardHeader className="bg-[#111111]/40 border-b border-[#1F1F1F] flex flex-row items-center justify-between py-6">
                   <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-primary/10 text-primary">
                           <Code2 className="h-5 w-5" />
                       </div>
-                      <CardTitle className="text-lg font-bold text-white">Deep Analysis</CardTitle>
+                      <CardTitle className="text-lg font-bold text-white">Detailed Analysis</CardTitle>
                   </div>
                   {review.aiModel && (
                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#141414] border border-[#262626] text-[10px] font-black uppercase tracking-tighter text-muted-foreground shadow-inner">
@@ -138,7 +255,7 @@ export default function ReviewDetails() {
                               {...props}
                             />
                           ),
-                          ol: ({ ...props }) => (
+                          ol: ({ ...props}) => (
                             <ol
                               className="list-decimal pl-6 space-y-2 my-4 text-gray-300 marker:text-gray-500"
                               {...props}
@@ -166,7 +283,6 @@ export default function ReviewDetails() {
                             />
                           ),
                           code: ({
-                            node,
                             inline,
                             className,
                             children,
@@ -224,7 +340,7 @@ export default function ReviewDetails() {
                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Repository</span>
                             <div className="flex items-center text-xs font-bold text-white bg-[#141414] px-2 py-1 rounded-lg border border-[#262626]">
                                 <GitPullRequest className="w-3.5 h-3.5 mr-2 text-primary/70" />
-                                {repo.fullName}
+                                {repo?.fullName}
                             </div>
                         </div>
                         <div className="flex items-center justify-between">

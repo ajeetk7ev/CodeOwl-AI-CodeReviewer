@@ -12,6 +12,17 @@ export interface IRepository extends Document {
   githubWebhookId?: string;
   indexed: boolean;
   lastIndexedAt?: Date;
+
+  // Progress tracking
+  indexingProgress?: number; // 0-100
+  indexingStatus?: "queued" | "processing" | "completed" | "failed";
+  indexingMetrics?: {
+    filesProcessed: number;
+    chunksCreated: number;
+    errors: number;
+    duration: number;
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +47,22 @@ const repositorySchema = new Schema<IRepository>(
     githubWebhookId: { type: String },
     indexed: { type: Boolean, default: false },
     lastIndexedAt: { type: Date },
+
+    indexingProgress: { type: Number, default: 0 },
+    indexingStatus: {
+      type: String,
+      enum: ["queued", "processing", "completed", "failed"],
+      default: "queued",
+    },
+    indexingMetrics: {
+      type: {
+        filesProcessed: Number,
+        chunksCreated: Number,
+        errors: Number,
+        duration: Number,
+      },
+      default: null,
+    },
   },
   { timestamps: true },
 );
