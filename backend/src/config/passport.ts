@@ -30,8 +30,7 @@ passport.use(
           });
         } else {
           if (!user.email) {
-            user.email =
-              profile.emails?.[0]?.value || `${profile.id}@no-email.github.com`;
+            user.email = profile.emails?.[0]?.value || "";
           }
           user.githubUsername = profile.username;
           user.githubToken = accessToken; // Update token just in case

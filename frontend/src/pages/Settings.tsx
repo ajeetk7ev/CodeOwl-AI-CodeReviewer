@@ -341,7 +341,7 @@ export default function Settings() {
                          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                          <Input 
                             className="h-11 pl-11 bg-[#090909] border-[#1F1F1F] rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary/50 transition-all text-white" 
-                            value={profile?.email || ""} 
+                            value={profile?.email || "Enter your email address"} 
                             onChange={(e) => profile && setProfile({...profile, email: e.target.value})}
                          />
                      </div>
