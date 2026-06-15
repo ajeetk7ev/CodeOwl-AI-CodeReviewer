@@ -1,302 +1,572 @@
+import {
+  ShieldCheck,
+  Zap,
+  Bot,
+  Code2,
+  GitMerge,
+  Check,
+  ArrowRight,
+  Sparkles,
+  Clock,
+  Link2,
+  Database,
+  ScanLine,
+  GitCommit,
+  Twitter,
+  Github,
+  Linkedin,
+  Mail,
+  ChevronDown,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Code2, ShieldCheck, Zap, Terminal, Sparkles, Check, Github } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Navbar from "@/components/layout/Navbar";
+import { useAuthStore } from "@/store/authStore";
+import { useState } from "react";
+
+function Header() {
+  const { user } = useAuthStore();
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/70 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden">
+            <img src="/favicon.png" alt="CodeOwl" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-display text-lg font-bold tracking-tight">
+            Code<span className="text-primary">Owl</span>
+          </span>
+        </Link>
+        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
+          <a href="#features" className="transition hover:text-foreground">Features</a>
+          <a href="#how" className="transition hover:text-foreground">How it works</a>
+          <a href="#pricing" className="transition hover:text-foreground">Pricing</a>
+          <a href="#faq" className="transition hover:text-foreground">FAQ</a>
+        </nav>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-elegant transition hover:opacity-90"
+            >
+              Dashboard <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden text-sm font-medium text-muted-foreground transition hover:text-foreground sm:block"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="relative overflow-hidden bg-hero">
+      <div className="absolute inset-0 grid-pattern opacity-40" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/10 blur-[100px]" />
+      <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-accent/8 blur-[120px]" />
+
+      <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-20 md:pt-28">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary backdrop-blur-sm">
+            <Sparkles className="h-3.5 w-3.5" />
+            Now reviewing 1M+ pull requests
+          </div>
+
+          <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl">
+            Ship code your team
+            <br />
+            <span className="text-gradient">actually trusts.</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            CodeOwl indexes your repo, understands your conventions, and
+            reviews every pull request — automatically, in under 60 seconds.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/login"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition hover:shadow-glow"
+            >
+              Start free trial <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </Link>
+            <a
+              href="#how"
+              className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-card/60 px-6 py-3 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-card hover:shadow-elegant"
+            >
+              See how it works
+            </a>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            Free for open source · No credit card required
+          </p>
+        </div>
+
+        <ProcessCard />
+      </div>
+    </section>
+  );
+}
+
+function ProcessCard() {
+  const steps = [
+    {
+      icon: <Link2 className="h-5 w-5" />,
+      title: "Connect repository",
+      desc: "Securely link your GitHub repo via OAuth. No installs required.",
+      log: "✓ Authorized github.com/acme/api",
+    },
+    {
+      icon: <Database className="h-5 w-5" />,
+      title: "Index & embed codebase",
+      desc: "Files are chunked, embedded and stored in a vector database for deep context.",
+      log: "✓ 4,812 chunks indexed → pgvector",
+    },
+    {
+      icon: <ScanLine className="h-5 w-5" />,
+      title: "Analyze PR diff",
+      desc: "On every PR, the diff is compared against your repo context and conventions.",
+      log: "✓ PR #482 analyzed in 38s",
+    },
+    {
+      icon: <GitCommit className="h-5 w-5" />,
+      title: "Commit & push review",
+      desc: "Inline review comments are committed and pushed back to GitHub automatically.",
+      log: "✓ 3 issues · 2 suggestions posted",
+    },
+  ];
+
+  return (
+    <div className="relative mx-auto mt-16 max-w-5xl">
+      <div className="absolute -inset-2 rounded-3xl bg-gradient-primary opacity-20 blur-2xl" />
+      <div className="relative rounded-2xl border border-border/60 bg-card/90 shadow-card backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-destructive/80" />
+            <span className="h-3 w-3 rounded-full bg-muted-foreground/40" />
+            <span className="h-3 w-3 rounded-full bg-muted-foreground/40" />
+          </div>
+          <div className="flex items-center gap-1.5 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Live
+          </div>
+        </div>
+
+        <div className="grid gap-0 p-6 md:grid-cols-4 md:gap-4">
+          {steps.map((s, i) => (
+            <div
+              key={s.title}
+              className="group relative animate-fade-in opacity-0"
+              style={{
+                animationDelay: `${i * 200}ms`,
+                animationFillMode: "forwards",
+              }}
+            >
+              <div className="relative rounded-xl border border-border/50 bg-background/60 p-4 transition duration-300 hover:border-primary/40 hover:bg-background hover:shadow-elegant">
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary transition group-hover:bg-primary/25">
+                    {s.icon}
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Step 0{i + 1}
+                  </div>
+                </div>
+                <h4 className="mt-3 text-sm font-semibold">{s.title}</h4>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {s.desc}
+                </p>
+                <div className="mt-3 rounded-md border border-border/60 bg-card px-2 py-1.5 font-mono text-[10px] text-primary/90">
+                  {s.log}
+                </div>
+              </div>
+
+              {i < steps.length - 1 && (
+                <div className="pointer-events-none absolute right-[-12px] top-1/2 hidden -translate-y-1/2 md:block">
+                  <div className="relative h-px w-6 bg-gradient-to-r from-primary/60 to-transparent">
+                    <div
+                      className="absolute -top-[3px] h-1.5 w-1.5 rounded-full bg-primary shadow-glow"
+                      style={{
+                        animation: "flow 2.4s ease-in-out infinite",
+                        animationDelay: `${i * 0.6}s`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border/60 px-5 py-3 text-xs text-muted-foreground">
+          <span className="font-mono">main ← codeowl/pr-482-review</span>
+          <span className="flex items-center gap-1.5 text-primary">
+            <Check className="h-3.5 w-3.5" /> Pushed to GitHub
+          </span>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes flow {
+          0% { transform: translateX(-4px); opacity: 0; }
+          40% { opacity: 1; }
+          100% { transform: translateX(24px); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Features() {
+  const items = [
+    { icon: <Bot className="h-5 w-5" />, title: "Context-aware reviews", body: "Trained on your repo's conventions, style guides and prior PRs — not generic boilerplate." },
+    { icon: <ShieldCheck className="h-5 w-5" />, title: "Security & secrets scan", body: "Flags injection, leaked keys, unsafe deps and OWASP issues before merge." },
+    { icon: <Zap className="h-5 w-5" />, title: "Under 60 seconds", body: "Streaming reviews kick off the moment a PR opens. Your team never waits." },
+    { icon: <Code2 className="h-5 w-5" />, title: "Every major language", body: "TypeScript, Python, Go, Rust, Java, Ruby, PHP, Swift, Kotlin and more." },
+    { icon: <GitMerge className="h-5 w-5" />, title: "Inline GitHub comments", body: "Suggestions appear right on the diff. Accept with a single click." },
+    { icon: <Clock className="h-5 w-5" />, title: "Learns from feedback", body: "Resolve or react and the model adapts to your team's taste over time." },
+  ];
+  return (
+    <section id="features" className="relative border-t border-border/60 py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Features</p>
+          <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
+            A senior engineer on <span className="text-gradient">every PR</span>
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            CodeOwl reads your code the way your best reviewer would — and never sleeps.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {items.map((f) => (
+            <div
+              key={f.title}
+              className="group relative rounded-xl border border-border/50 bg-card/60 p-6 transition duration-300 hover:border-primary/50 hover:bg-card hover:shadow-elegant"
+            >
+              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition group-hover:opacity-100" />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary transition group-hover:bg-primary/25 group-hover:text-primary">
+                {f.icon}
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    { n: "01", icon: <Link2 className="h-5 w-5" />, t: "Connect your repository", d: "Authorize CodeOwl with GitHub OAuth and pick the repos to review." },
+    { n: "02", icon: <Database className="h-5 w-5" />, t: "We index your codebase", d: "Files are chunked, embedded and stored in a vector DB for deep semantic context." },
+    { n: "03", icon: <ScanLine className="h-5 w-5" />, t: "Every PR is analyzed", d: "The diff is compared against your repo context, conventions and prior decisions." },
+    { n: "04", icon: <GitCommit className="h-5 w-5" />, t: "Review pushed back", d: "Inline comments and suggestions are committed and pushed straight to your PR." },
+  ];
+  return (
+    <section id="how" className="relative border-t border-border/60 bg-card/30 py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">How it works</p>
+          <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
+            From connect to commit — fully automated
+          </h2>
+        </div>
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map((s) => (
+            <div key={s.n} className="group relative rounded-xl border border-border/50 bg-background p-6 transition duration-300 hover:border-primary/40 hover:shadow-elegant">
+              <div className="flex items-center justify-between">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary transition group-hover:bg-primary/25">
+                  {s.icon}
+                </div>
+                <div className="font-display text-4xl font-bold text-primary/25">{s.n}</div>
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{s.t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Pricing() {
+  const plans = [
+    { name: "Hobby", price: "$0", desc: "For open source and personal projects.", features: ["Unlimited public repos", "Basic AI reviews", "Community support"], cta: "Start free", featured: false },
+    { name: "Team", price: "$29", per: "/dev / month", desc: "For startups shipping fast.", features: ["Unlimited private repos", "Advanced security scans", "Custom style guides", "Priority support"], cta: "Start 14-day trial", featured: true },
+    { name: "Enterprise", price: "Custom", desc: "SSO, audit logs and self-hosted.", features: ["SAML SSO", "Self-hosted deploy", "Dedicated CSM", "SOC 2 reports"], cta: "Talk to sales", featured: false },
+  ];
+  return (
+    <section id="pricing" className="relative border-t border-border/60 py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">Pricing</p>
+          <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
+            Simple, per-developer pricing
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            No seat games. No surprise overages. Cancel anytime.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {plans.map((p) => (
+            <div
+              key={p.name}
+              className={`relative rounded-2xl border p-8 transition duration-300 hover:-translate-y-1 ${
+                p.featured
+                  ? "border-primary/60 bg-card shadow-elegant hover:shadow-glow"
+                  : "border-border/60 bg-card/60 hover:border-primary/30 hover:bg-card hover:shadow-elegant"
+              }`}
+            >
+              {p.featured && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-glow">
+                  Most popular
+                </div>
+              )}
+              <h3 className="font-display text-xl font-bold">{p.name}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{p.desc}</p>
+              <div className="mt-6 flex items-baseline gap-1">
+                <span className="font-display text-5xl font-bold">{p.price}</span>
+                {p.per && <span className="text-sm text-muted-foreground">{p.per}</span>}
+              </div>
+              <Link
+                to="/login"
+                className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  p.featured
+                    ? "bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95"
+                    : "border border-border/80 bg-background hover:border-primary/40 hover:bg-card"
+                }`}
+              >
+                {p.cta}
+              </Link>
+              <ul className="mt-6 space-y-3 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "How does CodeOwl understand my codebase?",
+      answer: "CodeOwl indexes your repository by chunking files, creating embeddings, and storing them in a vector database. This allows it to understand your code's context, conventions, and patterns, providing reviews that are specific to your project rather than generic suggestions."
+    },
+    {
+      question: "What programming languages are supported?",
+      answer: "CodeOwl supports all major programming languages including TypeScript, Python, Go, Rust, Java, Ruby, PHP, Swift, Kotlin, JavaScript, C++, and more. Our AI is trained on diverse codebases to provide accurate reviews across different languages and frameworks."
+    },
+    {
+      question: "Is my code secure and private?",
+      answer: "Absolutely. We use enterprise-grade encryption for data in transit and at rest. Your code is never used to train our models, and we comply with SOC 2, GDPR, and other major security standards. You can also choose self-hosted deployment for complete control."
+    },
+    {
+      question: "How long does a code review take?",
+      answer: "Most reviews are completed in under 60 seconds. The moment a pull request is opened, CodeOwl begins analyzing the diff against your indexed codebase. Complex changes in large repositories may take slightly longer, but you'll never wait hours for feedback."
+    },
+    {
+      question: "Can I customize the review criteria?",
+      answer: "Yes! Team and Enterprise plans include custom style guides and rule configuration. You can define coding standards, security policies, and architectural patterns that CodeOwl should enforce. The AI learns from your team's feedback over time to align with your preferences."
+    },
+    {
+      question: "What happens if I disagree with a review?",
+      answer: "CodeOwl provides explanations for each suggestion, so you can understand the reasoning. You can dismiss suggestions with feedback, which helps the AI learn your team's preferences. Over time, the reviews become more aligned with your coding style and decisions."
+    }
+  ];
+
+  return (
+    <section id="faq" className="relative border-t border-border/60 py-24">
+      <div className="mx-auto max-w-4xl px-6">
+        <div className="text-center mb-16">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">FAQ</p>
+          <h2 className="mt-3 font-display text-4xl font-bold md:text-5xl">
+            Frequently asked <span className="text-gradient">questions</span>
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Everything you need to know about CodeOwl
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div
+              key={index}
+              className="rounded-xl border border-border/50 bg-card/60 overflow-hidden transition duration-300 hover:border-primary/40 hover:bg-card hover:shadow-elegant"
+            >
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="w-full flex items-center justify-between px-6 py-5 text-left"
+              >
+                <h3 className="font-semibold text-lg">{faq.question}</h3>
+                <ChevronDown
+                  className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${
+                    openIndex === index ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="px-6 pb-5 pt-0">
+                  <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTA() {
+  return (
+    <section className="relative border-t border-border/60 py-24">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-12 text-center shadow-elegant">
+          <div className="absolute inset-0 bg-hero opacity-70" />
+          <div className="absolute inset-0 grid-pattern opacity-30" />
+          <div className="absolute left-1/3 top-0 h-48 w-48 rounded-full bg-primary/20 blur-[80px]" />
+          <div className="absolute right-1/4 bottom-0 h-64 w-64 rounded-full bg-accent/15 blur-[100px]" />
+          <div className="relative">
+            <h2 className="font-display text-4xl font-bold md:text-5xl">
+              Stop reviewing boilerplate.<br />
+              <span className="text-gradient">Start shipping signal.</span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+              Connect a repo and let CodeOwl handle the rest — indexing, analysis and review.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                to="/login"
+                className="group inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-95"
+              >
+                Start free trial <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Link>
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-background/70 px-6 py-3 text-sm font-semibold transition hover:border-primary/40 hover:bg-card"
+              >
+                See pricing <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  const cols: { title: string; links: string[] }[] = [
+    { title: "Product", links: ["Features", "How it works", "Pricing", "Changelog", "Roadmap"] },
+    { title: "Company", links: ["About", "Careers", "Blog", "Press", "Contact"] },
+    { title: "Resources", links: ["Docs", "API reference", "Status", "Security", "Community"] },
+    { title: "Legal", links: ["Privacy", "Terms", "DPA", "Cookies", "Subprocessors"] },
+  ];
+  return (
+    <footer className="relative border-t border-border/60 bg-card/30">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-6">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden">
+                <img src="/favicon.png" alt="CodeOwl" className="w-full h-full object-cover" />
+              </div>
+              <span className="font-display text-lg font-bold tracking-tight">
+                Code<span className="text-primary">Owl</span>
+              </span>
+            </div>
+            <p className="mt-4 max-w-xs text-sm text-muted-foreground">
+              AI code reviews that understand your codebase. Connect a repo, get
+              senior-level feedback on every PR.
+            </p>
+            <div className="mt-6 flex items-center gap-3">
+              {[Twitter, Github, Linkedin, Mail].map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground transition hover:border-primary/50 hover:text-primary hover:shadow-elegant"
+                  aria-label="social"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {cols.map((c) => (
+            <div key={c.title}>
+              <h4 className="font-display text-sm font-semibold">{c.title}</h4>
+              <ul className="mt-4 space-y-3 text-sm">
+                {c.links.map((l) => (
+                  <li key={l}>
+                    <a href="#" className="text-muted-foreground transition hover:text-foreground">
+                      {l}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground md:flex-row">
+          <span>© {new Date().getFullYear()} CodeOwl Inc. All rights reserved.</span>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            All systems operational
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
-      <Navbar />
-      
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 text-center">
-          {/* Background Glows */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl -z-10 overflow-hidden">
-            <div className="absolute top-[-10%] left-[10%] w-[40%] h-[40%] bg-primary/20 blur-[130px] rounded-full animate-pulse shadow-[0_0_100px_rgba(251,191,36,0.1)]" />
-            <div className="absolute bottom-[20%] right-[10%] w-[40%] h-[40%] bg-amber-500/10 blur-[130px] rounded-full animate-pulse delay-700" />
-          </div>
-          
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-             </span>
-             Trusted by 10,000+ developers
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight max-w-5xl mx-auto mb-8 bg-linear-to-b from-white via-white to-white/40 bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 leading-[1.1]">
-             Review Code with <span className="text-primary decoration-primary/30 underline-offset-8 underline decoration-4">AI Precision</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-relaxed">
-             The ultimate AI pair programmer that audits your pull requests, catches edge cases, and suggests performance optimizations in real-time.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-             <Button size="lg" className="h-14 px-10 text-xl rounded-full shadow-2xl shadow-primary/25 hover:shadow-primary/40 transition-all font-bold" asChild>
-                <Link to="/login">
-                   Get Started Freely <ArrowRight className="ml-2 h-6 w-6" />
-                </Link>
-             </Button>
-             <Button size="lg" variant="outline" className="h-14 px-10 text-xl rounded-full border-white/10 glassmorphism hover:bg-white/5 font-semibold">
-                <Terminal className="mr-2 h-5 w-5" /> Live Demo
-             </Button>
-          </div>
-          
-          {/* Dashboard Preview */}
-          <div className="mt-24 mx-auto max-w-6xl relative animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
-            <div className="absolute inset-0 bg-primary/5 blur-[100px] -z-10 rounded-full" />
-            <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden">
-               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-                  <div className="flex gap-2">
-                    <div className="w-3.5 h-3.5 rounded-full bg-red-500/40" />
-                    <div className="w-3.5 h-3.5 rounded-full bg-yellow-500/40" />
-                    <div className="w-3.5 h-3.5 rounded-full bg-green-500/40" />
-                  </div>
-                  <div className="px-3 py-1 bg-white/5 rounded-md text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                    CodeOwl Analysis
-                  </div>
-               </div>
-               <div className="p-10 md:p-14 text-left font-mono text-base md:text-lg grid lg:grid-cols-2 gap-12">
-                  <div className="space-y-6">
-                      <div className="flex gap-4">
-                        <span className="text-muted-foreground/30">01</span>
-                        <div className="h-5 bg-white/10 w-full rounded-full" />
-                      </div>
-                      <div className="flex gap-4">
-                        <span className="text-muted-foreground/30">02</span>
-                        <div className="h-5 bg-white/20 w-3/4 rounded-full" />
-                      </div>
-                      <div className="flex gap-4">
-                        <span className="text-muted-foreground/30">03</span>
-                        <div className="h-5 bg-white/10 w-5/6 rounded-full" />
-                      </div>
-                      <div className="flex gap-4">
-                        <span className="text-muted-foreground/30">04</span>
-                        <div className="h-5 bg-primary/30 w-full rounded-full border border-primary/20" />
-                      </div>
-                  </div>
-                  <div className="space-y-6">
-                      <div className="p-6 rounded-2xl bg-primary/10 border border-primary/20 shadow-xl shadow-primary/5 animate-pulse">
-                          <div className="flex items-center gap-3 mb-3 text-primary">
-                              <Sparkles className="w-6 h-6" />
-                              <span className="font-bold text-lg">AI Insight</span>
-                          </div>
-                          <p className="text-foreground/90 leading-relaxed text-lg">
-                            We detected a possible race condition in line 42 when handling concurrent WebSocket connections. Consider using a <strong>Mutex</strong> lock.
-                          </p>
-                      </div>
-                  </div>
-               </div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Features Section */}
-        <section id="features" className="py-32 px-6 relative">
-          <div className="max-w-7xl mx-auto">
-             <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">Supercharge Your <span className="text-primary">Workflow</span></h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Everything you need to ship enterprise-grade code without the manual overhead.</p>
-             </div>
-             
-             <div className="grid md:grid-cols-3 gap-8">
-                <FeatureCard 
-                   icon={Zap}
-                   title="Lightning Fast"
-                   description="Reviews delivered in milliseconds. No more waiting days for peer feedback to get merged."
-                   gradient="from-amber-500/10 to-yellow-500/10"
-                />
-                <FeatureCard 
-                   icon={ShieldCheck}
-                   title="Security Audits"
-                   description="Detect SQL injections, XSS, and broken access controls before they ever touch production."
-                   gradient="from-orange-500/10 to-amber-500/10"
-                />
-                <FeatureCard 
-                   icon={Sparkles}
-                   title="Auto-Fix Suggestions"
-                   description="CodeOwl doesn't just find bugs; it provides the exact code to fix them instantly."
-                   gradient="from-yellow-600/10 to-amber-600/10"
-                />
-             </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="py-32 px-6 bg-white/2">
-          <div className="max-w-7xl mx-auto">
-             <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">Simple Pricing</h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your team size and scaling needs.</p>
-             </div>
-             
-             <div className="grid md:grid-cols-3 gap-8 items-stretch">
-                <PricingCard 
-                   tier="Student"
-                   price="$0"
-                   description="Perfect for individuals and learning projects."
-                   features={["5 Repositories", "100 Reviews/mo", "Basic Security Scan", "Community Support"]}
-                />
-                <PricingCard 
-                   tier="Pro"
-                   price="$29"
-                   description="For professional developers and growing startups."
-                   features={["Unlimited Repositories", "Unlimited Reviews", "Advanced Security", "Priority Support", "Custom AI Rules"]}
-                   recommended
-                />
-                <PricingCard 
-                   tier="Enterprise"
-                   price="Custom"
-                   description="Maximum security and scale for large organizations."
-                   features={["On-prem Deployment", "SSO & SAML", "Dedicated Manager", "Compliance Reports"]}
-                />
-             </div>
-          </div>
-        </section>
-
-        {/* Blog Section */}
-        <section id="blog" className="py-32 px-6">
-          <div className="max-w-7xl mx-auto">
-             <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-                <div className="max-w-2xl text-left">
-                   <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">From the <span className="text-primary">Blog</span></h2>
-                   <p className="text-xl text-muted-foreground">Stay ahead of the curve with our latest engineering insights and AI updates.</p>
-                </div>
-                <Button variant="link" className="text-primary text-xl font-bold h-auto p-0 group">
-                   View all posts <ArrowRight className="ml-2 group-hover:translate-x-2 transition-transform" />
-                </Button>
-             </div>
-             
-             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <BlogCard 
-                   title="Scaling AI Code Reviews to 1M PRs"
-                   date="Jan 15, 2024"
-                   category="Engineering"
-                   image="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"
-                />
-                <BlogCard 
-                   title="Why AI Reviews Beat Human Reviews"
-                   date="Jan 12, 2024"
-                   category="Opinion"
-                   image="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800"
-                />
-                <BlogCard 
-                   title="The Future of LLMs in Software Dev"
-                   date="Jan 08, 2024"
-                   category="Trends"
-                   image="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800"
-                />
-             </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-32 px-6">
-           <div className="max-w-5xl mx-auto rounded-[3rem] bg-linear-to-br from-primary via-primary/80 to-secondary p-12 text-center relative overflow-hidden shadow-2xl shadow-primary/30">
-              <div className="absolute inset-0 bg-primary/20 blur-[80px] -z-10 translate-x-1/2" />
-              <h2 className="text-4xl md:text-6xl font-black mb-8 text-white leading-tight">Ready to ship better code?</h2>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                 <Button size="lg" className="h-16 px-12 text-xl rounded-full bg-white text-primary hover:bg-white/90 transition-all font-bold group">
-                    Start Now <Github className="ml-2 w-6 h-6 group-hover:rotate-12 transition-transform" />
-                 </Button>
-                 <span className="text-primary-foreground/80 font-medium">Join 5,000+ teams today</span>
-              </div>
-           </div>
-        </section>
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <main>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Pricing />
+        <FAQ />
+        <CTA />
       </main>
-      
-      <footer className="py-20 px-6 border-t border-white/5 bg-black/20">
-         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="flex items-center gap-2 group cursor-pointer">
-               <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-primary/20 group-hover:bg-primary/30 transition-colors">
-                  <Code2 className="w-6 h-6 text-primary" />
-               </div>
-               <span className="text-2xl font-bold tracking-tight">CodeOwl</span>
-            </div>
-            <div className="flex gap-8 text-muted-foreground font-medium">
-               <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-               <a href="#" className="hover:text-primary transition-colors">Terms</a>
-               <a href="#" className="hover:text-primary transition-colors">Contact</a>
-            </div>
-            <p className="text-muted-foreground">© 2026 CodeOwl AI. All rights reserved.</p>
-         </div>
-      </footer>
+      <Footer />
     </div>
-  )
-}
-
-function FeatureCard({ icon: Icon, title, description, gradient }: any) {
-  return (
-    <div className="group relative p-8 rounded-[2rem] bg-card border border-white/5 hover:border-primary/50 transition-all duration-500 hover:-translate-y-2">
-      <div className={`absolute inset-0 bg-linear-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]`} />
-      <div className="relative z-10">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 text-primary shadow-xl shadow-primary/5 group-hover:scale-110 transition-transform duration-500">
-          <Icon className="w-8 h-8" />
-        </div>
-        <h3 className="text-2xl font-black mb-4 group-hover:text-primary transition-colors">{title}</h3>
-        <p className="text-muted-foreground leading-relaxed text-lg">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-function PricingCard({ tier, price, description, features, recommended }: any) {
-  return (
-    <div className={`relative p-10 rounded-[2.5rem] border ${recommended ? "border-primary bg-primary/5 shadow-2xl shadow-primary/20 scale-105 z-10" : "border-white/5 bg-card/50"} flex flex-col`}>
-      {recommended && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-1.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest rounded-full">
-          Most Popular
-        </div>
-      )}
-      <div className="mb-8">
-        <h3 className="text-2xl font-black mb-2">{tier}</h3>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
-      <div className="mb-10 flex items-baseline gap-1">
-        <span className="text-5xl font-black">{price}</span>
-        {price !== "Custom" && <span className="text-muted-foreground font-medium">/month</span>}
-      </div>
-      <div className="space-y-4 mb-12 flex-1">
-        {features.map((feature: string) => (
-          <div key={feature} className="flex items-center gap-3">
-            <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${recommended ? "bg-primary text-primary-foreground" : "bg-white/10 text-primary"}`}>
-              <Check className="w-4 h-4" />
-            </div>
-            <span className="text-foreground/80 font-medium">{feature}</span>
-          </div>
-        ))}
-      </div>
-      <Button 
-        variant={recommended ? "default" : "outline"} 
-        className={`w-full h-14 rounded-2xl text-lg font-bold ${recommended ? "shadow-xl shadow-primary/30" : "border-white/10"}`}
-      >
-        Get Started
-      </Button>
-    </div>
-  )
-}
-
-function BlogCard({ title, date, category, image }: any) {
-  return (
-    <div className="group cursor-pointer">
-      <div className="aspect-16/10 rounded-[2rem] overflow-hidden mb-6 relative">
-        <img 
-          src={image} 
-          alt={title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-        />
-        <div className="absolute top-6 left-6 px-4 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/10">
-          {category}
-        </div>
-      </div>
-      <div className="px-2">
-        <div className="text-sm text-muted-foreground font-medium mb-3">{date}</div>
-        <h3 className="text-2xl font-black group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-          {title}
-        </h3>
-      </div>
-    </div>
-  )
+  );
 }
