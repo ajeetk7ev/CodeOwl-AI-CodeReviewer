@@ -198,7 +198,7 @@ After the JSON, provide a detailed markdown-formatted review with these sections
 `;
 
   const response = await client.chat.send({
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    model: "openrouter/free",
     messages: [
       {
         role: "user",
